@@ -2,12 +2,15 @@
 #ifndef SATELLITE_H_
 #define SATELLITE_H_
 
-#include <omnetpp.h>
+#include "omnetpp.h"
 
 using namespace omnetpp;
 
-class Satellite : public cSimpleModule {
-
+class Satellite : public cSimpleModule
+{
+    cModule *groundStation;
+    cModule **terminals;
+    int numTerminals;
 protected:
     virtual void initialize() override;
     virtual void handleMessage(cMessage *msg) override;

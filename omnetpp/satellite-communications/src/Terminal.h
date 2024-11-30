@@ -2,12 +2,14 @@
 #ifndef TERMINAL_H_
 #define TERMINAL_H_
 
-#include <omnetpp.h>
+#include "omnetpp.h"
 
 using namespace omnetpp;
 
-class Terminal : public cSimpleModule {
-
+class Terminal : public cSimpleModule
+{
+    cMessage *timer;
+    cModule *satellite;
 protected:
     virtual void initialize() override;
     virtual void handleMessage(cMessage *msg) override;

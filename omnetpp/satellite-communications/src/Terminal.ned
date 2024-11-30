@@ -1,9 +1,10 @@
 
 package satellite_communications;
 
-simple Terminal {
+simple Terminal 
+{
 	parameters:
-	   int CR = default(intuniform(0,6)); 
+	   volatile int codingRateIndex = default(intuniform(0,6)); 
 	   @display("i=device/cellphone2");
 	   
 	gates:
