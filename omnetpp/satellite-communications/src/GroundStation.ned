@@ -1,17 +1,3 @@
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-// 
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Lesser General Public License for more details.
-// 
-// You should have received a copy of the GNU Lesser General Public License
-// along with this program.  If not, see http://www.gnu.org/licenses/.
-// 
 
 package satellite_communications;
 
@@ -21,8 +7,8 @@ simple GroundStation
         int M = default(10);
         int minS = default(1);
         int maxS = default(3616);
-        double rateT = default(0.1); // cosa vuol dire unit?
-        volatile double T @unit(ms) = default(exponential(rateT));
+        double meanT = default(10); // cosa vuol dire unit? meanT sarebbe 1/lambda
+        volatile double T @unit(ms) = default(exponential(1/meanT));
         @display("i=device/receiverdish");
 
     gates:

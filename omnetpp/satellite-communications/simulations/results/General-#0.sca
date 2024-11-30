@@ -1,0 +1,53 @@
+version 3
+run General-0-20241130-11:52:28-17980
+attr configname General
+attr datetime 20241130-11:52:28
+attr datetimef 20241130-115228
+attr experiment General
+attr inifile omnetpp.ini
+attr iterationvars ""
+attr iterationvarsd ""
+attr iterationvarsf ""
+attr measurement ""
+attr network SatCom
+attr processid 17980
+attr repetition 0
+attr replication #0
+attr resultdir results
+attr runnumber 0
+attr seedset 0
+config network SatCom
+config cpu-time-limit 10s
+config **.scalar-recording false
+
+par SatCom.groundStation typename "\"satellite_communications.GroundStation\""
+par SatCom.groundStation M 10
+par SatCom.groundStation minS 1
+par SatCom.groundStation maxS 3616
+par SatCom.groundStation meanT 10
+par SatCom.groundStation T exponential(1/meanT)
+attr unit ms
+par SatCom.terminal[0] typename "\"satellite_communications.Terminal\""
+par SatCom.terminal[0] CR 4
+par SatCom.terminal[1] typename "\"satellite_communications.Terminal\""
+par SatCom.terminal[1] CR 5
+par SatCom.terminal[2] typename "\"satellite_communications.Terminal\""
+par SatCom.terminal[2] CR 0
+par SatCom.terminal[3] typename "\"satellite_communications.Terminal\""
+par SatCom.terminal[3] CR 3
+par SatCom.terminal[4] typename "\"satellite_communications.Terminal\""
+par SatCom.terminal[4] CR 3
+par SatCom.terminal[5] typename "\"satellite_communications.Terminal\""
+par SatCom.terminal[5] CR 3
+par SatCom.terminal[6] typename "\"satellite_communications.Terminal\""
+par SatCom.terminal[6] CR 1
+par SatCom.terminal[7] typename "\"satellite_communications.Terminal\""
+par SatCom.terminal[7] CR 3
+par SatCom.terminal[8] typename "\"satellite_communications.Terminal\""
+par SatCom.terminal[8] CR 5
+par SatCom.terminal[9] typename "\"satellite_communications.Terminal\""
+par SatCom.terminal[9] CR 2
+par SatCom.satellite typename "\"satellite_communications.Satellite\""
+par SatCom typename "\"satellite_communications.simulations.SatCom\""
+par SatCom N 10
+
