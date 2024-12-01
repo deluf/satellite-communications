@@ -11,7 +11,7 @@ void GroundStation::initialize()
     numTerminals = getParentModule()->par("N");
     acknowledgedCodingRates = 0; // Maybe move this to constructor?
 
-    /* Storing CR values and queues in terminal-id indexed vectors (we might want to group them in a struct)
+    /* Storing CR values and queues in a terminal-id-indexed vector of TerminalInfo structs
      *
      * - when new CR arrives, read the sender's terminal id (using custom msg I guess)
      * and store the CR in the proper slot
@@ -19,8 +19,11 @@ void GroundStation::initialize()
      * - Do the same when a new packet arrives and store the packet in
      * the proper terminal queue
      */
-    crValues.resize(numTerminals);
-    terminalQueues.resize(numTerminals);
+
+    terminals.resize(numTerminals);
+    // Default crValue is 0 and the queue is empty
+    for (int i = 0; i < numTerminals; ++i) terminals[i] = {i, 0, cQueue()};
+
 }
 
 void GroundStation::handleMessage(cMessage *msg)
@@ -36,7 +39,7 @@ void GroundStation::handleMessage(cMessage *msg)
          * TODO: Choose how to make the terminal send its terminal ID to the GS
          * here I'm assigning it randomly just for testing purposes
          */
-        crValues[intuniform(0, numTerminals - 1)] = std::stoi(msg->getName());
+        terminals[intuniform(0, numTerminals - 1)].crValue = std::stoi(msg->getName());
         acknowledgedCodingRates++;
 
         EV_DEBUG << "[groundStation]> Acknowledged coding rate " << codingRateToString[std::stoi(msg->getName())]
@@ -55,42 +58,36 @@ void GroundStation::handleMessage(cMessage *msg)
 
         delete msg;
     }
-
-
 }
 
-bool GroundStation::maxCRPolicy(const TerminalInfo &a, const TerminalInfo &b)
-{
-    return a.crValue > b.crValue;
-}
 
 void GroundStation::scheduleTerminals()
 {
     /*
-     * Creating a list of terminals with their IDs, CR values, and queues
-     * Just a "fancy" way to group TerminalInfos together, not strictly necessary, an array of integers would do
+     * Creating a permutation of the indexes so that we can access
+     * terminal structs in the proper order
      */
-    std::vector<TerminalInfo> terminals;
-    for (int i = 0; i < numTerminals; ++i) {
-        terminals.push_back({i, crValues[i], &terminalQueues[i]});
-    }
+    std::vector<int> sortedIndexes(numTerminals);
+    for (int i = 0; i < numTerminals; ++i) sortedIndexes[i] = i;
 
     /* Custom comparator to apply maxCRPolicy */
-    std::sort(terminals.begin(), terminals.end(), maxCRPolicy);
+    std::sort(sortedIndexes.begin(), sortedIndexes.end(),
+              [this](int a, int b) {
+                  return terminals[a].crValue > terminals[b].crValue;
+              });
 
-    EV_INFO << "[groundStation]> Scheduling terminals based on CR values" << endl;
-    buildFrame(terminals);
+    EV_DEBUG << "[groundStation]> Scheduling terminals based on CR values" << endl;
+    buildFrame(sortedIndexes);
 }
 
-void GroundStation::buildFrame(std::vector<TerminalInfo>& terminals)
+void GroundStation::buildFrame(std::vector<int>& sortedIndexes)
 {
-    for (TerminalInfo &terminal : terminals) {
-        int crValue = terminal.crValue;
-        cQueue *queue = terminal.queue;
+    for (int index : sortedIndexes) {
+        TerminalInfo &terminal = terminals[index];
 
-        EV_INFO << "[groundStation]> Adding Terminal ID=" << terminal.id
-                 << " with CR=" << crValue
-                 << " to frame. Queue size=" << queue->getLength() << endl;
+        EV_DEBUG << "[groundStation]> Adding Terminal ID=" << terminal.id
+                << " with CR=" << terminal.crValue
+                << " to frame. Queue size=" << terminal.queue.getLength() << endl;
 
         /*
         * TODO: build and send out the frame using &queue and crValue
