@@ -9,7 +9,7 @@ using namespace omnetpp;
 struct TerminalInfo {
     int id;
     int crValue;
-    cQueue queue;
+    cQueue *queue;
 };
 
 class GroundStation : public cSimpleModule

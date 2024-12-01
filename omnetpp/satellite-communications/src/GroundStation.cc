@@ -11,7 +11,7 @@ void GroundStation::initialize()
     numTerminals = getParentModule()->par("N");
     acknowledgedCodingRates = 0; // Maybe move this to constructor?
 
-    /* Storing CR values and queues in terminal-id indexed vectors
+    /* Storing CR values and queues in terminal-id indexed vectors (we might want to group them in a struct)
      *
      * - when new CR arrives, read the sender's terminal id (using custom msg I guess)
      * and store the CR in the proper slot
@@ -36,7 +36,7 @@ void GroundStation::handleMessage(cMessage *msg)
          * TODO: Choose how to make the terminal send its terminal ID to the GS
          * here I'm assigning it randomly just for testing purposes
          */
-        crValues[intuniform(0, numTerminals)] = std::stoi(msg->getName());
+        crValues[intuniform(0, numTerminals - 1)] = std::stoi(msg->getName());
         acknowledgedCodingRates++;
 
         EV_DEBUG << "[groundStation]> Acknowledged coding rate " << codingRateToString[std::stoi(msg->getName())]
@@ -72,13 +72,13 @@ void GroundStation::scheduleTerminals()
      */
     std::vector<TerminalInfo> terminals;
     for (int i = 0; i < numTerminals; ++i) {
-        terminals.push_back({i, crValues[i], terminalQueues[i]});
+        terminals.push_back({i, crValues[i], &terminalQueues[i]});
     }
 
     /* Custom comparator to apply maxCRPolicy */
     std::sort(terminals.begin(), terminals.end(), maxCRPolicy);
 
-    EV_DEBUG << "[groundStation]> Scheduling terminals based on CR values" << endl;
+    EV_INFO << "[groundStation]> Scheduling terminals based on CR values" << endl;
     buildFrame(terminals);
 }
 
@@ -86,11 +86,11 @@ void GroundStation::buildFrame(std::vector<TerminalInfo>& terminals)
 {
     for (TerminalInfo &terminal : terminals) {
         int crValue = terminal.crValue;
-        cQueue &queue = terminal.queue;
+        cQueue *queue = terminal.queue;
 
-        EV_DEBUG << "[groundStation]> Adding Terminal ID=" << terminal.id
+        EV_INFO << "[groundStation]> Adding Terminal ID=" << terminal.id
                  << " with CR=" << crValue
-                 << " to frame. Queue size=" << queue.getLength() << endl;
+                 << " to frame. Queue size=" << queue->getLength() << endl;
 
         /*
         * TODO: build and send out the frame using &queue and crValue
