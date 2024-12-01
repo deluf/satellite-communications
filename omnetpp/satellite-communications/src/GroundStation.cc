@@ -68,7 +68,7 @@ void GroundStation::scheduleTerminals()
 {
     /*
      * Creating a list of terminals with their IDs, CR values, and queues
-     * Just a "fancy" to group TerminalInfos together, not strictly necessary, an array of integers would
+     * Just a "fancy" way to group TerminalInfos together, not strictly necessary, an array of integers would do
      */
     std::vector<TerminalInfo> terminals;
     for (int i = 0; i < numTerminals; ++i) {
