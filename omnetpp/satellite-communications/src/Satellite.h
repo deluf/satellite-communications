@@ -11,6 +11,7 @@ class Satellite : public cSimpleModule
     cModule *groundStation;
     cModule **terminals;
     int numTerminals;
+
 protected:
     virtual void initialize() override;
     virtual void handleMessage(cMessage *msg) override;

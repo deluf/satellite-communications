@@ -6,10 +6,6 @@
 
 using namespace omnetpp;
 
-enum CODING_RATE {
-    L3, L2, L1, R, H1, H2, H3
-};
-
 static const char *codingRateToString[7] = {
     "L3", "L2", "L1", "R", "H1", "H2", "H3"
 };

@@ -10,6 +10,7 @@ class Terminal : public cSimpleModule
 {
     cMessage *timer;
     cModule *satellite;
+
 protected:
     virtual void initialize() override;
     virtual void handleMessage(cMessage *msg) override;

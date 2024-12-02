@@ -1,6 +1,7 @@
 
 #include "GroundStation.h"
-#include "Oracle.h"
+#include "Oracle.h"     // TODO: Only used to convert the coding rates enum to string literals
+#include "codingRateMessage_m.h"
 
 Define_Module(GroundStation);
 
@@ -9,7 +10,9 @@ void GroundStation::initialize()
 {
     satellite = getModuleByPath("^.satellite");
     numTerminals = getParentModule()->par("N");
-    acknowledgedCodingRates = 0; // Maybe move this to constructor?
+
+    // TODO: Move this to the constructor if there also are other things to put there
+    acknowledgedCodingRates = 0;
 
     /* Storing CR values and queues in a terminal-id-indexed vector of TerminalInfo structs
      *
@@ -22,7 +25,10 @@ void GroundStation::initialize()
 
     terminals.resize(numTerminals);
     // Default crValue is 0 and the queue is empty
-    for (int i = 0; i < numTerminals; ++i) terminals[i] = {i, 0, cQueue()};
+    for (int i = 0; i < numTerminals; ++i)
+    {
+        terminals[i] = {i, 0, cQueue()};
+    }
 
 }
 
@@ -35,15 +41,17 @@ void GroundStation::handleMessage(cMessage *msg)
     }
     else
     {
-        /*
-         * TODO: Choose how to make the terminal send its terminal ID to the GS
-         * here I'm assigning it randomly just for testing purposes
-         */
-        terminals[intuniform(0, numTerminals - 1)].crValue = std::stoi(msg->getName());
+
+        CodingRateMessage *codingRateMessage = check_and_cast<CodingRateMessage*>(msg);
+
+        int terminalId = codingRateMessage->getTerminalId();
+        CODING_RATE codingRate = codingRateMessage->getCodingRate();
+
+        terminals[terminalId].crValue = codingRate;
         acknowledgedCodingRates++;
 
-        EV_DEBUG << "[groundStation]> Acknowledged coding rate " << codingRateToString[std::stoi(msg->getName())]
-                 << " for terminal "<< "X" << ", "
+        EV_DEBUG << "[groundStation]> Acknowledged coding rate " << codingRateToString[codingRate]
+                 << " for terminal "<< terminalId << ", "
                  << numTerminals - acknowledgedCodingRates << " remaining" << endl;
 
         if (acknowledgedCodingRates == numTerminals)
@@ -53,10 +61,11 @@ void GroundStation::handleMessage(cMessage *msg)
             cMessage *frame = new cMessage("frame");
             sendDirect(frame, satellite, "in");
 
-            EV_DEBUG << "[groundStation]> Received all coding rates, sending the frame back...";
+            EV_DEBUG << "[groundStation]> Received all coding rates, sending the frame back..." << endl;
         }
 
-        delete msg;
+        // todo: or msg? or both ? (i don't think both, and probably either delete codingRateMessage or delete msg is fine)
+        delete codingRateMessage;
     }
 }
 

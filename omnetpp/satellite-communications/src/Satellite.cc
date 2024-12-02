@@ -44,7 +44,7 @@ void Satellite::handleMessage(cMessage *msg)
         /* Since we are duplicating it, the original message can be deleted */
         delete msg;
 
-        EV_DEBUG << "[satellite]> Received a message from the ground station, forwarding it to all the terminals";
+        EV_DEBUG << "[satellite]> Received a message from the ground station, forwarding it to all the terminals" << endl;
     }
 
 }

@@ -33,10 +33,11 @@ PROJECTRELATIVE_PATH = src
 O = $(PROJECT_OUTPUT_DIR)/$(CONFIGNAME)/$(PROJECTRELATIVE_PATH)
 
 # Object files for local .cc, .msg and .sm files
-OBJS = $O/GroundStation.o $O/Oracle.o $O/Satellite.o $O/Terminal.o
+OBJS = $O/GroundStation.o $O/Oracle.o $O/Satellite.o $O/Terminal.o $O/codingRateMessage_m.o
 
 # Message files
-MSGFILES =
+MSGFILES = \
+    codingRateMessage.msg
 
 # SM files
 SMFILES =
