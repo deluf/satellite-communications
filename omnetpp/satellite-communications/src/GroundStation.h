@@ -2,14 +2,16 @@
 #ifndef GROUNDSTATION_H_
 #define GROUNDSTATION_H_
 
+#include <vector>
+
 #include "omnetpp.h"
 
 using namespace omnetpp;
 
-struct TerminalInfo
+struct TerminalStatus
 {
     int id;
-    int crValue;    // TODO: this can just be named "codingRate", and could be of type CODING_RATE (defined in "oracle.h")
+    int codingRate;
     cQueue queue;
 };
 
@@ -18,7 +20,8 @@ class GroundStation : public cSimpleModule
     cModule *satellite;
     int numTerminals;
     int acknowledgedCodingRates;
-    std::vector<TerminalInfo> terminals;
+    std::vector<TerminalStatus> terminals;
+    std::vector<TerminalStatus*> sortedTerminals;
 
     void buildFrame(std::vector<int>& sortedIndices);
     void scheduleTerminals();

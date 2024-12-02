@@ -1,7 +1,7 @@
 
 #include "GroundStation.h"
-#include "Oracle.h"     // TODO: Only used to convert the coding rates enum to string literals
 #include "codingRateMessage_m.h"
+#include "Oracle.h" // TODO: Only used to convert coding rates to string literals
 
 Define_Module(GroundStation);
 
@@ -9,9 +9,8 @@ Define_Module(GroundStation);
 void GroundStation::initialize()
 {
     satellite = getModuleByPath("^.satellite");
-    numTerminals = getParentModule()->par("N");
 
-    // TODO: Move this to the constructor if there also are other things to put there
+    // TODO: Move this to the constructor, but only if there also are other things to put there
     acknowledgedCodingRates = 0;
 
     /* Storing CR values and queues in a terminal-id-indexed vector of TerminalInfo structs
@@ -23,13 +22,15 @@ void GroundStation::initialize()
      * the proper terminal queue
      */
 
+    numTerminals = getParentModule()->par("N").intValue();
     terminals.resize(numTerminals);
-    // Default crValue is 0 and the queue is empty
-    for (int i = 0; i < numTerminals; ++i)
-    {
-        terminals[i] = {i, 0, cQueue()};
-    }
+    sortedTerminals.resize(numTerminals);
 
+    for (int i = 0; i < numTerminals; i++)
+    {
+        terminals[i] = {i, 0, cQueue()};  // TODO: the cQueue() constructor may have been already called with resize()
+        sortedTerminals[i] = &terminals[i];
+    }
 }
 
 void GroundStation::handleMessage(cMessage *msg)
@@ -37,17 +38,16 @@ void GroundStation::handleMessage(cMessage *msg)
 
     if (msg->isSelfMessage())
     {
-
+        // TODO: implement packet arrivals
     }
     else
     {
-
         CodingRateMessage *codingRateMessage = check_and_cast<CodingRateMessage*>(msg);
 
         int terminalId = codingRateMessage->getTerminalId();
         CODING_RATE codingRate = codingRateMessage->getCodingRate();
 
-        terminals[terminalId].crValue = codingRate;
+        terminals[terminalId].codingRate = codingRate;
         acknowledgedCodingRates++;
 
         EV_DEBUG << "[groundStation]> Acknowledged coding rate " << codingRateToString[codingRate]
@@ -57,49 +57,43 @@ void GroundStation::handleMessage(cMessage *msg)
         if (acknowledgedCodingRates == numTerminals)
         {
             acknowledgedCodingRates = 0;
-            scheduleTerminals();
+
+            std::sort(
+                sortedTerminals.begin(), sortedTerminals.end(),
+                [](const TerminalStatus *a, const TerminalStatus *b)
+                {
+                    return a->codingRate > b->codingRate;
+                }
+            );
+
+            EV_DEBUG << "[groundStation]> Sorted terminals:" << endl;
+            for (TerminalStatus* &terminal: sortedTerminals)
+            {
+                EV_DEBUG << "[groundStation]> CR: " << codingRateToString[terminal->codingRate] << ", ID: "
+                        << terminal->id << ", Qlength: " << terminal->queue.getLength() << endl;
+            }
+
             cMessage *frame = new cMessage("frame");
             sendDirect(frame, satellite, "in");
 
-            EV_DEBUG << "[groundStation]> Received all coding rates, sending the frame back..." << endl;
+            EV_DEBUG << "[groundStation]> Received all coding rates, sending the frame..." << endl;
         }
 
-        // todo: or msg? or both ? (i don't think both, and probably either delete codingRateMessage or delete msg is fine)
         delete codingRateMessage;
     }
-}
-
-
-void GroundStation::scheduleTerminals()
-{
-    /*
-     * Creating a permutation of the indexes so that we can access
-     * terminal structs in the proper order
-     */
-    std::vector<int> sortedIndexes(numTerminals);
-    for (int i = 0; i < numTerminals; ++i) sortedIndexes[i] = i;
-
-    /* Custom comparator to apply maxCRPolicy */
-    std::sort(sortedIndexes.begin(), sortedIndexes.end(),
-              [this](int a, int b) {
-                  return terminals[a].crValue > terminals[b].crValue;
-              });
-
-    EV_DEBUG << "[groundStation]> Scheduling terminals based on CR values" << endl;
-    buildFrame(sortedIndexes);
 }
 
 void GroundStation::buildFrame(std::vector<int>& sortedIndexes)
 {
     for (int index : sortedIndexes) {
-        TerminalInfo &terminal = terminals[index];
+        TerminalStatus &terminal = terminals[index];
 
         EV_DEBUG << "[groundStation]> Adding Terminal ID=" << terminal.id
-                << " with CR=" << terminal.crValue
+                << " with CR=" << terminal.codingRate
                 << " to frame. Queue size=" << terminal.queue.getLength() << endl;
 
         /*
-        * TODO: build and send out the frame using &queue and crValue
+        * TODO: build and send out the frame using &queue and codingRate
         */
     }
 }

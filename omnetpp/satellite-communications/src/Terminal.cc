@@ -2,8 +2,8 @@
 #include <string>
 
 #include "Terminal.h"
-#include "Oracle.h"     // TODO: Only used to convert the coding rates enum to string literals
 #include "codingRateMessage_m.h"
+#include "Oracle.h" // TODO: Only used to convert coding rates to string literals
 
 Define_Module(Terminal);
 
@@ -44,5 +44,5 @@ void Terminal::handleMessage(cMessage *msg)
 
 void Terminal::finish()
 {
-    delete timer;
+
 }
