@@ -10,17 +10,14 @@ void Satellite::initialize()
      * so that we don't have to fetch them each time later on
      */
 
-    groundStation = getModuleByPath("^.groundStation");
-
     cModule *satCom = getParentModule();
-    numTerminals = satCom->par("N");
-
-    // TODO: Maybe it's not the "c++" way of doing this
-    terminals = new cModule*[numTerminals];
-    for (int i = 0; i < numTerminals; i++)
+    terminals.resize(satCom->par("N").intValue());
+    int i = 0;
+    for (cModule* &terminal : terminals)
     {
-        terminals[i] = satCom->getSubmodule("terminal", i);
+        terminal = satCom->getSubmodule("terminal", i++);
     }
+    groundStation = satCom->getSubmodule("groundStation");
 }
 
 void Satellite::handleMessage(cMessage *msg)
@@ -31,25 +28,26 @@ void Satellite::handleMessage(cMessage *msg)
     {
         EV_DEBUG << "[satellite]> Received a message from terminal " << sender->getIndex()
                 << ", forwarding it to the ground station" << endl;
+
         sendDirect(msg, groundStation, "in");
     }
     else if (sender->isName("groundStation"))
     {
-        for (int i = 0; i < numTerminals; i++)
+        EV_DEBUG << "[satellite]> Received a message from the ground station, forwarding it to all the terminals" << endl;
+
+        for (cModule* &terminal : terminals)
         {
             /* Duplicating the message because we can't send the same message object to multiple terminals */
-            sendDirect(msg->dup(), terminals[i] , "in");
+            sendDirect(msg->dup(), terminal, "in");
         }
 
         /* Since we are duplicating it, the original message can be deleted */
         delete msg;
-
-        EV_DEBUG << "[satellite]> Received a message from the ground station, forwarding it to all the terminals" << endl;
     }
 
 }
 
 void Satellite::finish()
 {
-    delete terminals;
+
 }

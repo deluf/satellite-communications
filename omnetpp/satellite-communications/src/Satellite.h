@@ -2,6 +2,8 @@
 #ifndef SATELLITE_H_
 #define SATELLITE_H_
 
+#include <vector>
+
 #include "omnetpp.h"
 
 using namespace omnetpp;
@@ -9,8 +11,7 @@ using namespace omnetpp;
 class Satellite : public cSimpleModule
 {
     cModule *groundStation;
-    cModule **terminals;
-    int numTerminals;
+    std::vector<cModule*> terminals;
 
 protected:
     virtual void initialize() override;
