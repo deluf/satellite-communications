@@ -10,16 +10,17 @@ void GroundStation::initialize()
 {
     satellite = getModuleByPath("^.satellite");
 
-    // TODO: Move this to the constructor, but only if there also are other things to put there
+    // TODO: Move this to the constructor iff there also are other things to put there, otherwise it's ugly lol
     acknowledgedCodingRates = 0;
 
-    /* Storing CR values and queues in a terminal-id-indexed vector of TerminalInfo structs
+    /*
+     * The status of each terminal (id, current coding rate and queue) is stored in a
+     *  vector of terminalStatus structs indexed by the id field (i.e. terminals[i].id = i).
+     * This allows to update the coding rate of any terminal in O(1) whenever a new codingRateMessage arrives.
      *
-     * - when new CR arrives, read the sender's terminal id (using custom msg I guess)
-     * and store the CR in the proper slot
-     *
-     * - Do the same when a new packet arrives and store the packet in
-     * the proper terminal queue
+     * In order to serve the terminals according to a maximum-coding-rate policy without losing the
+     *  indexing property described before, a vector of pointers to those terminalStatus structs is used.
+     * This way, we don't actually sort the terminalStatus structs, but the pointers to them.
      */
 
     numTerminals = getParentModule()->par("N").intValue();
@@ -54,6 +55,7 @@ void GroundStation::handleMessage(cMessage *msg)
                  << " for terminal "<< terminalId << ", "
                  << numTerminals - acknowledgedCodingRates << " remaining" << endl;
 
+        /* All of the coding rates have been received */
         if (acknowledgedCodingRates == numTerminals)
         {
             acknowledgedCodingRates = 0;
@@ -69,33 +71,38 @@ void GroundStation::handleMessage(cMessage *msg)
             EV_DEBUG << "[groundStation]> Sorted terminals:" << endl;
             for (TerminalStatus* &terminal: sortedTerminals)
             {
-                EV_DEBUG << "[groundStation]> CR: " << codingRateToString[terminal->codingRate] << ", ID: "
-                        << terminal->id << ", Qlength: " << terminal->queue.getLength() << endl;
+                EV_DEBUG << "[groundStation]> ID: " << terminal->id << ", CR: "
+                        << codingRateToString[terminal->codingRate]
+                        << ", Queue length: " << terminal->queue.getLength() << endl;
             }
 
-            cMessage *frame = new cMessage("frame");
+            EV_DEBUG << "[groundStation]> Building the frame..." << endl;
+
+            cMessage *frame = buildFrame();
             sendDirect(frame, satellite, "in");
 
-            EV_DEBUG << "[groundStation]> Received all coding rates, sending the frame..." << endl;
+            EV_DEBUG << "[groundStation]> Frame sent!" << endl;
         }
 
         delete codingRateMessage;
     }
 }
 
-void GroundStation::buildFrame(std::vector<int>& sortedIndexes)
+cMessage *GroundStation::buildFrame()
 {
-    for (int index : sortedIndexes) {
-        TerminalStatus &terminal = terminals[index];
+    cMessage *frame = new cMessage("frame");
 
-        EV_DEBUG << "[groundStation]> Adding Terminal ID=" << terminal.id
-                << " with CR=" << terminal.codingRate
-                << " to frame. Queue size=" << terminal.queue.getLength() << endl;
+    for (TerminalStatus *terminal : sortedTerminals) {
 
-        /*
-        * TODO: build and send out the frame using &queue and codingRate
-        */
+        EV_DEBUG << "[groundStation]> Considering terminal with ID: " << terminal->id
+                << ", CR: " << terminal->codingRate
+                << ", Queue length: " << terminal->queue.getLength() << endl;
+
+        // TODO: actually schedule stuff...
+
     }
+
+    return frame;
 }
 
 void GroundStation::finish()

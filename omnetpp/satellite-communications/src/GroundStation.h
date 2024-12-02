@@ -23,8 +23,7 @@ class GroundStation : public cSimpleModule
     std::vector<TerminalStatus> terminals;
     std::vector<TerminalStatus*> sortedTerminals;
 
-    void buildFrame(std::vector<int>& sortedIndices);
-    void scheduleTerminals();
+    cMessage *buildFrame();
 
 protected:
     virtual void initialize() override;
