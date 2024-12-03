@@ -5,10 +5,11 @@ simple GroundStation
 {
     parameters:
         int M = default(10);
-        int minS = default(1);
-        int maxS = default(3616);
-        double meanT @unit(ms) = default(10ms);
-        volatile double T @unit(ms) = default(exponential(meanT));
+        int minS @unit(byte) = default(1 byte);
+        int maxS @unit(byte) = default(3616 byte);
+        volatile int S @unit(byte) = default(intuniform(minS, maxS));
+        double meanT @unit(ms) = default(40 ms);
+        volatile double T @unit(s) = default(exponential(meanT));
         @display("i=device/receiverdish");
 
     gates:

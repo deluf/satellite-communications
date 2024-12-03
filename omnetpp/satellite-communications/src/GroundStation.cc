@@ -1,13 +1,14 @@
 
 #include "GroundStation.h"
 #include "codingRateMessage_m.h"
+#include "terminalPacket_m.h"
+#include "customTimer_m.h"
 #include "Oracle.h" // TODO: Only used to convert coding rates to string literals
 
 Define_Module(GroundStation);
 
 /*
  * TODO:
- * packet arrivals
  * buildFrame()
  * independent RNGs
  * omnetpp.ini
@@ -36,6 +37,16 @@ void GroundStation::initialize()
     {
         terminals[i].id = i;
         sortedTerminals[i] = &terminals[i];
+
+        CustomTimer *customTimer = new CustomTimer("customTimer");
+        customTimer->setTerminalId(i);
+
+        // todo: may be a code duplicate
+        double nextArrivalTime = par("T").doubleValue();
+        scheduleAt(simTime() + SimTime(nextArrivalTime), customTimer);
+
+        EV_DEBUG << "[groundStation]> the first packet for terminal " << i
+                << " is scheduled to arrive in " << nextArrivalTime * 1e3 << " ms" << endl;
     }
 
     receivedCodingRates = 0;
@@ -46,7 +57,23 @@ void GroundStation::handleMessage(cMessage *msg)
 
     if (msg->isSelfMessage())
     {
-        // TODO: implement packet arrivals
+        CustomTimer *customTimer = check_and_cast<CustomTimer*>(msg);
+
+        int terminalId = customTimer->getTerminalId();
+        int byteLength = par("S").intValue();
+
+        TerminalPacket *terminalPacket = new TerminalPacket();
+        terminalPacket->setTerminalId(terminalId);
+        terminalPacket->setByteLength(byteLength);
+
+        terminals[terminalId].queue.insert(terminalPacket);
+
+        // todo: may be a code duplicate
+        double nextArrivalTime = par("T").doubleValue();
+        scheduleAt(simTime() + SimTime(nextArrivalTime), customTimer);
+
+        EV_DEBUG << "[groundStation]> terminal " << terminalId << " received a new packet of size "
+                << byteLength << ", the next one is scheduled to arrive in " << nextArrivalTime * 1e3 << " ms" << endl;
     }
     else
     {
@@ -99,13 +126,46 @@ cMessage *GroundStation::buildFrame()
 {
     cMessage *frame = new cMessage("frame");
 
+    const int M = par("M");
+    int numBlocks = 0;
+
     for (TerminalStatus *terminal : sortedTerminals) {
 
         EV_DEBUG << "[groundStation]> Considering terminal with ID: " << terminal->id
                 << ", CR: " << terminal->codingRate
                 << ", Queue length: " << terminal->queue.getLength() << endl;
 
+
+        // todo: remember to delete the packet custom messages
+
+
         // TODO: actually schedule stuff...
+        /*
+         * { Frame
+         *    dimensione
+         *    [
+         *      { Blocco
+         *          dimensioneMax
+         *          [
+         *              { Pacchetto
+         *                  terminalId
+         *                  dimensione
+         *
+         *              }
+         *              ...
+         *              { Pacchetto
+         *                  ...
+         *              }
+         *          ]
+         *      }
+         *      ...
+         *      { Blocco
+         *          ...
+         *      }
+         *    ]
+         * }
+         *
+         */
 
     }
 
