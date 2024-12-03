@@ -11,6 +11,7 @@ Define_Module(Terminal);
 void Terminal::initialize()
 {
     satellite = getParentModule()->getSubmodule("satellite");
+    delaySignal = registerSignal("delay");
     timer = new cMessage("timer");
     scheduleAt(simTime(), timer);
 }
@@ -36,8 +37,17 @@ void Terminal::handleMessage(cMessage *msg)
     }
     else
     {
-        EV_DEBUG << "[terminal " << getIndex() << "]> Received: " << msg->getName() << endl;
-        delete msg;
+        // TODO: for each packet in the received frame (msg) belonging to this terminal
+        {
+            // TODO: change with (simTime() - packet->getCreationTime()).dbl()
+            double delay = uniform(0, 0.08);
+            emit(delaySignal, delay);
+
+            EV_DEBUG << "[terminal " << getIndex() << "]> Received a packet of size "
+                    << "X" << " with a delay of " << delay << endl;
+
+            delete msg;
+        }
     }
 
 }

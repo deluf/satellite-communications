@@ -10,6 +10,7 @@ class Terminal : public cSimpleModule
 {
     cMessage *timer;
     cModule *satellite;
+    simsignal_t delaySignal;
 
 protected:
     virtual void initialize() override;

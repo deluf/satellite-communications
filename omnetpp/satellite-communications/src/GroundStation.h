@@ -18,11 +18,13 @@ struct TerminalStatus
 class GroundStation : public cSimpleModule
 {
     cModule *satellite;
+    simsignal_t throughputSignal;
     int numTerminals;
     int receivedCodingRates;
     std::vector<TerminalStatus> terminals;
     std::vector<TerminalStatus*> sortedTerminals;
 
+    long debugTotalBitsSent;
     cMessage *buildFrame();
 
 protected:

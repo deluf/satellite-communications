@@ -10,6 +10,12 @@ simple GroundStation
         volatile int S @unit(byte) = default(intuniform(minS, maxS));
         double meanT @unit(ms) = default(40 ms);
         volatile double T @unit(s) = default(exponential(meanT));
+        @signal[throughput](type=long);
+	    @statistic[throughputStat](
+	    	source=sumPerDuration(throughput);
+	    	record=last, vector;
+	    	unit="bps";
+	    ); // TODO: vector metric only collected for debugging purposes
         @display("i=device/receiverdish");
 
     gates:

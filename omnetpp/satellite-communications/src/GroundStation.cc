@@ -10,13 +10,15 @@ Define_Module(GroundStation);
 /*
  * TODO:
  * buildFrame()
- * independent RNGs
- * omnetpp.ini
+ * omnetpp.ini && independent RNGs
  * statistics
  */
 
 void GroundStation::initialize()
 {
+    debugTotalBitsSent = 0;
+    throughputSignal = registerSignal("throughput");
+
     satellite = getParentModule()->getSubmodule("satellite");
 
     /*
@@ -113,9 +115,18 @@ void GroundStation::handleMessage(cMessage *msg)
             EV_DEBUG << "[groundStation]> Building the frame..." << endl;
 
             cMessage *frame = buildFrame();
+
+            // TODO: Change with the actual frame size
+            long bitLength = intuniform(8000, 16000);
+            debugTotalBitsSent += bitLength;
+
+            // TODO: Explain why i did this lol
+            cTimestampedValue tmp(simTime() + SimTime(80, SIMTIME_MS), (intval_t)bitLength);
+            emit(throughputSignal, &tmp);
+
             sendDirect(frame, satellite, "in");
 
-            EV_DEBUG << "[groundStation]> Frame sent!" << endl;
+            EV_DEBUG << "[groundStation]> Frame of size " << bitLength << " bits sent!" << endl;
         }
 
         delete codingRateMessage;
@@ -126,19 +137,13 @@ cMessage *GroundStation::buildFrame()
 {
     cMessage *frame = new cMessage("frame");
 
-    const int M = par("M");
-    int numBlocks = 0;
-
     for (TerminalStatus *terminal : sortedTerminals) {
 
         EV_DEBUG << "[groundStation]> Considering terminal with ID: " << terminal->id
                 << ", CR: " << terminal->codingRate
                 << ", Queue length: " << terminal->queue.getLength() << endl;
 
-
-        // todo: remember to delete the packet custom messages
-
-
+        // TODO: remember to delete the packet message after removing it from the queue (perhaps the terminals does that?)
         // TODO: actually schedule stuff...
         /*
          * { Frame
@@ -174,5 +179,9 @@ cMessage *GroundStation::buildFrame()
 
 void GroundStation::finish()
 {
-
+    EV_DEBUG << "### Simulation finished ###" << endl
+            << "\tTotal number of bits sent: " << debugTotalBitsSent << endl
+            << "\tSimulation time: " << simTime() << " s" << endl
+            << "\tExpected throughput: " << ((double)debugTotalBitsSent)/(simTime().dbl()) << " bps" <<
+            << "\tTheoretical expected throughput: 150000 bps" << endl;
 }
