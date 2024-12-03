@@ -10,7 +10,7 @@ Define_Module(Terminal);
 
 void Terminal::initialize()
 {
-    satellite = getModuleByPath("^.satellite");
+    satellite = getParentModule()->getSubmodule("satellite");
     timer = new cMessage("timer");
     scheduleAt(simTime(), timer);
 }

@@ -5,13 +5,18 @@
 
 Define_Module(GroundStation);
 
+/*
+ * TODO:
+ * packet arrivals
+ * buildFrame()
+ * independent RNGs
+ * omnetpp.ini
+ * statistics
+ */
 
 void GroundStation::initialize()
 {
-    satellite = getModuleByPath("^.satellite");
-
-    // TODO: Move this to the constructor iff there also are other things to put there, otherwise it's ugly lol
-    acknowledgedCodingRates = 0;
+    satellite = getParentModule()->getSubmodule("satellite");
 
     /*
      * The status of each terminal (id, current coding rate and queue) is stored in a
@@ -29,9 +34,11 @@ void GroundStation::initialize()
 
     for (int i = 0; i < numTerminals; i++)
     {
-        terminals[i] = {i, 0, cQueue()};  // TODO: the cQueue() constructor may have been already called with resize()
+        terminals[i].id = i;
         sortedTerminals[i] = &terminals[i];
     }
+
+    receivedCodingRates = 0;
 }
 
 void GroundStation::handleMessage(cMessage *msg)
@@ -49,16 +56,16 @@ void GroundStation::handleMessage(cMessage *msg)
         CODING_RATE codingRate = codingRateMessage->getCodingRate();
 
         terminals[terminalId].codingRate = codingRate;
-        acknowledgedCodingRates++;
+        receivedCodingRates++;
 
         EV_DEBUG << "[groundStation]> Acknowledged coding rate " << codingRateToString[codingRate]
                  << " for terminal "<< terminalId << ", "
-                 << numTerminals - acknowledgedCodingRates << " remaining" << endl;
+                 << numTerminals - receivedCodingRates << " remaining" << endl;
 
         /* All of the coding rates have been received */
-        if (acknowledgedCodingRates == numTerminals)
+        if (receivedCodingRates == numTerminals)
         {
-            acknowledgedCodingRates = 0;
+            receivedCodingRates = 0;
 
             std::sort(
                 sortedTerminals.begin(), sortedTerminals.end(),

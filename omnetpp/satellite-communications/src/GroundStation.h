@@ -19,7 +19,7 @@ class GroundStation : public cSimpleModule
 {
     cModule *satellite;
     int numTerminals;
-    int acknowledgedCodingRates;
+    int receivedCodingRates;
     std::vector<TerminalStatus> terminals;
     std::vector<TerminalStatus*> sortedTerminals;
 
