@@ -9,6 +9,7 @@ simple Terminal
 	   @statistic[delayStat](
 	   		source=delay;
 	   		record=mean, vector;
+	   		unit="ms";
 	   ); // TODO: vector metric only collected for debugging purposes
 	   @display("i=device/cellphone2");
 	   

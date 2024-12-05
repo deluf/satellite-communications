@@ -1,17 +1,18 @@
 
-#ifndef TERMINAL_H_
-#define TERMINAL_H_
+#ifndef PACKETGENERATOR_H_
+#define PACKETGENERATOR_H_
 
 #include "omnetpp.h"
 
 using namespace omnetpp;
 
-class Terminal : public cSimpleModule
+class PacketGenerator : public cSimpleModule
 {
     cMessage *timer;
-    cModule *satellite;
-    simsignal_t delaySignal;
-    int id;
+    int terminalId;
+    int minS;
+    int maxS;
+    double meanT;
 
 protected:
     virtual void initialize() override;
@@ -19,4 +20,4 @@ protected:
     virtual void finish() override;
 };
 
-#endif /* TERMINAL_H_ */
+#endif /* PACKETGENERATOR_H_ */

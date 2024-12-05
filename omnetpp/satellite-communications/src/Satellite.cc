@@ -3,6 +3,7 @@
 
 Define_Module(Satellite);
 
+
 void Satellite::initialize()
 {
     /*
@@ -22,16 +23,14 @@ void Satellite::initialize()
 
 void Satellite::handleMessage(cMessage *msg)
 {
-    cModule *sender = msg->getSenderModule();
-
-    if (sender->isName("terminal"))
+    if (msg->isName("codingRate"))
     {
-        EV_DEBUG << "[satellite]> Received a message from terminal " << sender->getIndex()
+        EV_DEBUG << "[satellite]> Received a message from terminal " << msg->getSenderModule()->getIndex()
                 << ", forwarding it to the ground station" << endl;
 
         sendDirect(msg, groundStation, "in");
     }
-    else if (sender->isName("groundStation"))
+    else if (msg->isName("frame"))
     {
         EV_DEBUG << "[satellite]> Received a message from the ground station, forwarding it to all the terminals" << endl;
 

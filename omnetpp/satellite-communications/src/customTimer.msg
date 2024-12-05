@@ -1,5 +1,0 @@
-
-message CustomTimer
-{
- 	int terminalId;
-}

@@ -10,6 +10,7 @@ network SatCom
 {
     parameters:
         int N = default(3);
+        
     submodules:
         groundStation: GroundStation 
         {

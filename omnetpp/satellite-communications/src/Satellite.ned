@@ -5,6 +5,7 @@ simple Satellite
 {
     parameters:
         @display("i=device/satellite");
+        
     gates:
         input in @directIn;
 }

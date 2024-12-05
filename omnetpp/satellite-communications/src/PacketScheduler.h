@@ -1,6 +1,6 @@
 
-#ifndef GROUNDSTATION_H_
-#define GROUNDSTATION_H_
+#ifndef PACKETSCHEDULER_H_
+#define PACKETSCHEDULER_H_
 
 #include <vector>
 
@@ -15,16 +15,16 @@ struct TerminalStatus
     cQueue queue;
 };
 
-class GroundStation : public cSimpleModule
+class PacketScheduler : public cSimpleModule
 {
     cModule *satellite;
     simsignal_t throughputSignal;
-    int numTerminals;
-    int receivedCodingRates;
     std::vector<TerminalStatus> terminals;
     std::vector<TerminalStatus*> sortedTerminals;
+    int numTerminals;
+    int receivedCodingRates;
+    long debugTotalBitsSent;    // TODO: Just for debugging
 
-    long debugTotalBitsSent;
     cMessage *buildFrame();
 
 protected:
@@ -33,4 +33,4 @@ protected:
     virtual void finish() override;
 };
 
-#endif /* GROUNDSTATION_H_ */
+#endif /* PACKETSCHEDULER_H_ */

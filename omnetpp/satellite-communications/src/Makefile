@@ -34,18 +34,17 @@ O = $(PROJECT_OUTPUT_DIR)/$(CONFIGNAME)/$(PROJECTRELATIVE_PATH)
 
 # Object files for local .cc, .msg and .sm files
 OBJS = \
-    $O/GroundStation.o \
     $O/Oracle.o \
+    $O/PacketGenerator.o \
+    $O/PacketScheduler.o \
     $O/Satellite.o \
     $O/Terminal.o \
     $O/codingRateMessage_m.o \
-    $O/customTimer_m.o \
     $O/terminalPacket_m.o
 
 # Message files
 MSGFILES = \
     codingRateMessage.msg \
-    customTimer.msg \
     terminalPacket.msg
 
 # SM files
