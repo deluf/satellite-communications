@@ -1,6 +1,5 @@
 
 #include "PacketScheduler.h"
-#include "codingRateMessage_m.h"
 #include "terminalPacket_m.h"
 #include "Oracle.h" // TODO: Only used to convert coding rates to string literals
 
@@ -14,7 +13,7 @@ void PacketScheduler::initialize()
     cModule *satCom = getParentModule()->getParentModule();
     satellite = satCom->getSubmodule("satellite");
     numTerminals = satCom->par("N").intValue();
-
+    blocksPerFrame = par("blocksPerFrame").intValue();
     /*
      * The status of each terminal (id, current coding rate and queue) is stored in a
      *  vector of terminalStatus structs indexed by the id field (i.e. terminals[i].id = i).
@@ -89,12 +88,24 @@ void PacketScheduler::handleMessage(cMessage *msg)
                         << ", Queue length: " << terminal->queue.getLength() << endl;
             }
 
-            EV_DEBUG << "[groundStation]> Building the frame..." << endl;
+            EV_DEBUG << "[packetScheduler]> Building the frame..." << endl;
 
-            cMessage *frame = buildFrame();
+            Frame *frame = buildFrame();
+            long bitLength = frame->getSize() * 8;
+            // TODO: move frame disposal to receiver
+            for (int i = 0; i < frame->getBlocksArraySize(); ++i)
+            {
+               Block& block = frame->getBlocksForUpdate(i);
+               for (int j = 0; j < block.getPacketsArraySize(); ++j)
+               {
+                   TerminalPacket* packet = block.getPacketsForUpdate(j);
+                   if (packet) delete packet;
+               }
+           }
+            delete frame;
 
             // TODO: Change with the actual size of the frame
-            long bitLength = 100;
+
             debugTotalBitsSent += bitLength;
 
             /*
@@ -108,8 +119,8 @@ void PacketScheduler::handleMessage(cMessage *msg)
              */
             cTimestampedValue tmp(simTime() + SimTime(80, SIMTIME_MS), (intval_t)bitLength);
             emit(throughputSignal, &tmp);
-
-            sendDirect(frame, satellite, "in");
+            // TODO: Uncomment
+            // sendDirect(frame, satellite, "in");
 
             EV_DEBUG << "[packetScheduler]> Frame of size " << bitLength << " bits sent!" << endl;
         }
@@ -118,27 +129,116 @@ void PacketScheduler::handleMessage(cMessage *msg)
     }
 }
 
-cMessage *PacketScheduler::buildFrame()
+int PacketScheduler::getBlockSizeForCodingRate(CODING_RATE codingRate)
 {
-    cMessage *frame = new cMessage("frame");
-
-    for (TerminalStatus *terminal : sortedTerminals)
-    {
-
-        EV_DEBUG << "[packetScheduler]> Considering terminal with ID: " << terminal->id
-                << ", CR: " << terminal->codingRate
-                << ", Queue length: " << terminal->queue.getLength() << endl;
-
-        // TODO: remember to delete the terminalPacket(s) after removing them from the queue,
-        //       or, if we embed them in the frame, remember to delete them in the terminals
-
-        // TODO: actually schedule stuff...
-
-
+    int blockSize;
+    switch (codingRate) {
+        case L3: blockSize = 904; break;
+        case L2: blockSize = 1356; break;
+        case L1: blockSize = 1808; break;
+        case R:  blockSize = 2260; break;
+        case H1: blockSize = 2712; break;
+        case H2: blockSize = 3164; break;
+        case H3: blockSize = 3616; break;
+        default: throw cRuntimeError("Unknown coding rate");
     }
 
+    return blockSize / blocksPerFrame;
+}
+
+
+void PacketScheduler::initBlock(Block* block, CODING_RATE codingRate)
+{
+    block->setCodingRate(codingRate);
+    block->setMaxSize(getBlockSizeForCodingRate(codingRate));
+}
+
+// TODO: PacketId duplication
+Frame *PacketScheduler::buildFrame()
+{
+    Frame *frame = new Frame();
+    frame->setSize(0);
+
+    frame->setBlocksArraySize(blocksPerFrame);
+    for (int i = 0; i < blocksPerFrame; i++) frame->getBlocksForUpdate(i).setUsedSize(0);
+
+    int currentBlockIndex = 0;
+    for (TerminalStatus *terminal : sortedTerminals)
+    {
+        while (!terminal->queue.isEmpty() && currentBlockIndex < blocksPerFrame)
+        {
+            Block* block = &frame->getBlocksForUpdate(currentBlockIndex);
+
+            /* Initialize the block if empty */
+            if (block->getUsedSize() == 0) initBlock(block, terminal->codingRate);
+
+            /* Block's CR must be <= Terminal's CR */
+            if (block->getCodingRate() > terminal->codingRate) {
+                EV_DEBUG << "[packetScheduler]> Block coding rate (" << block->getCodingRate()
+                         << ") too high (Terminal's CR: " << terminal->codingRate
+                         << "), moving to next block" << endl;
+                currentBlockIndex++;
+                continue;
+            }
+
+            TerminalPacket *packet = check_and_cast<TerminalPacket*>(terminal->queue.front());
+            int remainingSize = packet->getByteLength();
+            EV_DEBUG << "[packetScheduler]> Scheduling packet for terminal: " << packet->getTerminalId()
+                     << " with size: " << packet->getByteLength() << " bytes" << endl;
+
+            /* checking if the packet can be scheduled at all */
+            int blocksLeft = blocksPerFrame - currentBlockIndex - 1;
+            int availableSpace = block->getMaxSize() - block->getUsedSize();
+            int totalAvailableSpace = availableSpace + blocksLeft * getBlockSizeForCodingRate(terminal->codingRate);
+
+            if (remainingSize > totalAvailableSpace)
+            {
+                /* If the packet can't be scheduled in the frame due to its size, we move to the next terminal */
+                EV_DEBUG << "[packetScheduler]> Packet (" << packet->getByteLength()
+                         << " bytes) too large to fit in frame ("
+                         << totalAvailableSpace
+                         << " bytes left), moving to next terminal" << endl;
+                break;
+            }
+
+            while (remainingSize > 0)
+            {
+                availableSpace = block->getMaxSize() - block->getUsedSize();
+                if (remainingSize <= availableSpace)
+                {
+                    block->setUsedSize(block->getUsedSize() + remainingSize);
+                    block->appendPackets(packet);
+                    frame->setSize(frame->getSize() + remainingSize);
+                    remainingSize = 0;
+                    terminal->queue.pop();
+                } else
+                {
+                    /* Current block is full , we split the packet*/
+                    TerminalPacket *packetSegment = packet->dup();
+                    packetSegment->setByteLength(availableSpace);
+                    block->setUsedSize(block->getMaxSize());
+                    block->appendPackets(packetSegment);
+                    frame->setSize(frame->getSize() + availableSpace);
+                    remainingSize -= availableSpace;
+                    packet->setByteLength(remainingSize);
+
+                    /* Packet will be scheduled in the next block, must be initialized */
+                    EV_DEBUG << "[packetScheduler]> Block " << currentBlockIndex
+                             << " has been filled" << endl;
+                    block = &frame->getBlocksForUpdate(++currentBlockIndex);
+                    initBlock(block, terminal->codingRate);
+                }
+            }
+        }
+
+        if (currentBlockIndex == blocksPerFrame) break;
+    }
+
+    EV_INFO << "[packetScheduler]> Finished building frame with size: "
+            << frame->getSize() << " bytes" << endl;
     return frame;
 }
+
 
 void PacketScheduler::finish()
 {

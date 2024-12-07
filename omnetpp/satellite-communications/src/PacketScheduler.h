@@ -5,13 +5,15 @@
 #include <vector>
 
 #include "omnetpp.h"
+#include "Frame_m.h"
+#include "codingRateMessage_m.h"
 
 using namespace omnetpp;
 
 struct TerminalStatus
 {
     int id;
-    int codingRate;
+    CODING_RATE codingRate;
     cQueue queue;
 };
 
@@ -24,8 +26,11 @@ class PacketScheduler : public cSimpleModule
     int numTerminals;
     int receivedCodingRates;
     long debugTotalBitsSent;    // TODO: Just for debugging
+    int blocksPerFrame;
 
-    cMessage *buildFrame();
+    Frame *buildFrame();
+    int getBlockSizeForCodingRate(CODING_RATE codingRate);
+    void initBlock(Block* block, CODING_RATE codingRate);
 
 protected:
     virtual void initialize() override;
