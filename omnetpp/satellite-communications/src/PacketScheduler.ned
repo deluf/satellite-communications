@@ -4,8 +4,7 @@ package satellite_communications;
 simple PacketScheduler
 {
     parameters:
-        // TODO: Maybe find a better name for M (e.g. blocksPerFrame)
-        int M = default(10);
+        int blocksPerFrame = default(4);
         @signal[throughput](type=long);
         @statistic[throughputStat]
         (
