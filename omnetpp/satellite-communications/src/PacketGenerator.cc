@@ -14,7 +14,6 @@ void PacketGenerator::initialize()
     minS = par("minS").intValue();
     maxS = par("maxS").intValue();
     timer = new cMessage("timer");
-
     double nextArrivalTime = exponential(meanT);
     scheduleAt(simTime() + SimTime(nextArrivalTime), timer);
 
@@ -34,9 +33,10 @@ void PacketGenerator::handleMessage(cMessage *msg)
     int byteLength = intuniform(minS, maxS);
 
     // EV_INFO << std::fixed << std::setprecision(5) << simTime().dbl() << " - [packetGenerator " << getIndex() << "]> Extracted S for terminal " << getIndex() << " | Total: " << getRNG(0)->getNumbersDrawn() << endl;
-
+    EV_DEBUG <<"[packetGenerator " << terminalId << "]> Generated packet id: " << packetId << endl;
     TerminalPacket *terminalPacket = new TerminalPacket("terminalPacket");
     terminalPacket->setTerminalId(terminalId);
+    terminalPacket->setPacketId(packetId++);
     terminalPacket->setByteLength(byteLength);
     send(terminalPacket, "out");
 

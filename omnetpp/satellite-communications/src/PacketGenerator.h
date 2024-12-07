@@ -5,6 +5,7 @@
 #include "omnetpp.h"
 
 using namespace omnetpp;
+static int packetId;
 
 class PacketGenerator : public cSimpleModule
 {

@@ -92,20 +92,6 @@ void PacketScheduler::handleMessage(cMessage *msg)
 
             Frame *frame = buildFrame();
             long bitLength = frame->getSize() * 8;
-            // TODO: move frame disposal to receiver
-            for (int i = 0; i < frame->getBlocksArraySize(); ++i)
-            {
-               Block& block = frame->getBlocksForUpdate(i);
-               for (int j = 0; j < block.getPacketsArraySize(); ++j)
-               {
-                   TerminalPacket* packet = block.getPacketsForUpdate(j);
-                   if (packet) delete packet;
-               }
-           }
-            delete frame;
-
-            // TODO: Change with the actual size of the frame
-
             debugTotalBitsSent += bitLength;
 
             /*
@@ -119,8 +105,7 @@ void PacketScheduler::handleMessage(cMessage *msg)
              */
             cTimestampedValue tmp(simTime() + SimTime(80, SIMTIME_MS), (intval_t)bitLength);
             emit(throughputSignal, &tmp);
-            // TODO: Uncomment
-            // sendDirect(frame, satellite, "in");
+            if (bitLength) sendDirect(frame, satellite, "in");
 
             EV_DEBUG << "[packetScheduler]> Frame of size " << bitLength << " bits sent!" << endl;
         }
@@ -153,10 +138,9 @@ void PacketScheduler::initBlock(Block* block, CODING_RATE codingRate)
     block->setMaxSize(getBlockSizeForCodingRate(codingRate));
 }
 
-// TODO: PacketId duplication
 Frame *PacketScheduler::buildFrame()
 {
-    Frame *frame = new Frame();
+    Frame *frame = new Frame("frame");
     frame->setSize(0);
 
     frame->setBlocksArraySize(blocksPerFrame);

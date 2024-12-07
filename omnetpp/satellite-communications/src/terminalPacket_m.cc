@@ -176,6 +176,7 @@ TerminalPacket& TerminalPacket::operator=(const TerminalPacket& other)
 void TerminalPacket::copy(const TerminalPacket& other)
 {
     this->terminalId = other.terminalId;
+    this->packetId = other.packetId;
     this->byteLength = other.byteLength;
 }
 
@@ -183,6 +184,7 @@ void TerminalPacket::parsimPack(omnetpp::cCommBuffer *b) const
 {
     ::omnetpp::cMessage::parsimPack(b);
     doParsimPacking(b,this->terminalId);
+    doParsimPacking(b,this->packetId);
     doParsimPacking(b,this->byteLength);
 }
 
@@ -190,6 +192,7 @@ void TerminalPacket::parsimUnpack(omnetpp::cCommBuffer *b)
 {
     ::omnetpp::cMessage::parsimUnpack(b);
     doParsimUnpacking(b,this->terminalId);
+    doParsimUnpacking(b,this->packetId);
     doParsimUnpacking(b,this->byteLength);
 }
 
@@ -201,6 +204,16 @@ int TerminalPacket::getTerminalId() const
 void TerminalPacket::setTerminalId(int terminalId)
 {
     this->terminalId = terminalId;
+}
+
+int TerminalPacket::getPacketId() const
+{
+    return this->packetId;
+}
+
+void TerminalPacket::setPacketId(int packetId)
+{
+    this->packetId = packetId;
 }
 
 int TerminalPacket::getByteLength() const
@@ -219,6 +232,7 @@ class TerminalPacketDescriptor : public omnetpp::cClassDescriptor
     mutable const char **propertyNames;
     enum FieldConstants {
         FIELD_terminalId,
+        FIELD_packetId,
         FIELD_byteLength,
     };
   public:
@@ -286,7 +300,7 @@ const char *TerminalPacketDescriptor::getProperty(const char *propertyName) cons
 int TerminalPacketDescriptor::getFieldCount() const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
-    return base ? 2+base->getFieldCount() : 2;
+    return base ? 3+base->getFieldCount() : 3;
 }
 
 unsigned int TerminalPacketDescriptor::getFieldTypeFlags(int field) const
@@ -299,9 +313,10 @@ unsigned int TerminalPacketDescriptor::getFieldTypeFlags(int field) const
     }
     static unsigned int fieldTypeFlags[] = {
         FD_ISEDITABLE,    // FIELD_terminalId
+        FD_ISEDITABLE,    // FIELD_packetId
         FD_ISEDITABLE,    // FIELD_byteLength
     };
-    return (field >= 0 && field < 2) ? fieldTypeFlags[field] : 0;
+    return (field >= 0 && field < 3) ? fieldTypeFlags[field] : 0;
 }
 
 const char *TerminalPacketDescriptor::getFieldName(int field) const
@@ -314,9 +329,10 @@ const char *TerminalPacketDescriptor::getFieldName(int field) const
     }
     static const char *fieldNames[] = {
         "terminalId",
+        "packetId",
         "byteLength",
     };
-    return (field >= 0 && field < 2) ? fieldNames[field] : nullptr;
+    return (field >= 0 && field < 3) ? fieldNames[field] : nullptr;
 }
 
 int TerminalPacketDescriptor::findField(const char *fieldName) const
@@ -324,7 +340,8 @@ int TerminalPacketDescriptor::findField(const char *fieldName) const
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
     int baseIndex = base ? base->getFieldCount() : 0;
     if (strcmp(fieldName, "terminalId") == 0) return baseIndex + 0;
-    if (strcmp(fieldName, "byteLength") == 0) return baseIndex + 1;
+    if (strcmp(fieldName, "packetId") == 0) return baseIndex + 1;
+    if (strcmp(fieldName, "byteLength") == 0) return baseIndex + 2;
     return base ? base->findField(fieldName) : -1;
 }
 
@@ -338,9 +355,10 @@ const char *TerminalPacketDescriptor::getFieldTypeString(int field) const
     }
     static const char *fieldTypeStrings[] = {
         "int",    // FIELD_terminalId
+        "int",    // FIELD_packetId
         "int",    // FIELD_byteLength
     };
-    return (field >= 0 && field < 2) ? fieldTypeStrings[field] : nullptr;
+    return (field >= 0 && field < 3) ? fieldTypeStrings[field] : nullptr;
 }
 
 const char **TerminalPacketDescriptor::getFieldPropertyNames(int field) const
@@ -424,6 +442,7 @@ std::string TerminalPacketDescriptor::getFieldValueAsString(omnetpp::any_ptr obj
     TerminalPacket *pp = omnetpp::fromAnyPtr<TerminalPacket>(object); (void)pp;
     switch (field) {
         case FIELD_terminalId: return long2string(pp->getTerminalId());
+        case FIELD_packetId: return long2string(pp->getPacketId());
         case FIELD_byteLength: return long2string(pp->getByteLength());
         default: return "";
     }
@@ -442,6 +461,7 @@ void TerminalPacketDescriptor::setFieldValueAsString(omnetpp::any_ptr object, in
     TerminalPacket *pp = omnetpp::fromAnyPtr<TerminalPacket>(object); (void)pp;
     switch (field) {
         case FIELD_terminalId: pp->setTerminalId(string2long(value)); break;
+        case FIELD_packetId: pp->setPacketId(string2long(value)); break;
         case FIELD_byteLength: pp->setByteLength(string2long(value)); break;
         default: throw omnetpp::cRuntimeError("Cannot set field %d of class 'TerminalPacket'", field);
     }
@@ -458,6 +478,7 @@ omnetpp::cValue TerminalPacketDescriptor::getFieldValue(omnetpp::any_ptr object,
     TerminalPacket *pp = omnetpp::fromAnyPtr<TerminalPacket>(object); (void)pp;
     switch (field) {
         case FIELD_terminalId: return pp->getTerminalId();
+        case FIELD_packetId: return pp->getPacketId();
         case FIELD_byteLength: return pp->getByteLength();
         default: throw omnetpp::cRuntimeError("Cannot return field %d of class 'TerminalPacket' as cValue -- field index out of range?", field);
     }
@@ -476,6 +497,7 @@ void TerminalPacketDescriptor::setFieldValue(omnetpp::any_ptr object, int field,
     TerminalPacket *pp = omnetpp::fromAnyPtr<TerminalPacket>(object); (void)pp;
     switch (field) {
         case FIELD_terminalId: pp->setTerminalId(omnetpp::checked_int_cast<int>(value.intValue())); break;
+        case FIELD_packetId: pp->setPacketId(omnetpp::checked_int_cast<int>(value.intValue())); break;
         case FIELD_byteLength: pp->setByteLength(omnetpp::checked_int_cast<int>(value.intValue())); break;
         default: throw omnetpp::cRuntimeError("Cannot set field %d of class 'TerminalPacket'", field);
     }

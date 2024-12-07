@@ -23,6 +23,7 @@ class TerminalPacket;
  * message TerminalPacket
  * {
  *     int terminalId;
+ *     int packetId;
  *     int byteLength;
  * }
  * </pre>
@@ -31,6 +32,7 @@ class TerminalPacket : public ::omnetpp::cMessage
 {
   protected:
     int terminalId = 0;
+    int packetId = 0;
     int byteLength = 0;
 
   private:
@@ -50,6 +52,9 @@ class TerminalPacket : public ::omnetpp::cMessage
 
     virtual int getTerminalId() const;
     virtual void setTerminalId(int terminalId);
+
+    virtual int getPacketId() const;
+    virtual void setPacketId(int packetId);
 
     virtual int getByteLength() const;
     virtual void setByteLength(int byteLength);

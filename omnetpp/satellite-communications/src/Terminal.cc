@@ -4,6 +4,7 @@
 #include "Terminal.h"
 #include "codingRateMessage_m.h"
 #include "Oracle.h" // TODO: Only used to convert coding rates to string literals
+#include "Frame_m.h"
 
 Define_Module(Terminal);
 
@@ -41,17 +42,25 @@ void Terminal::handleMessage(cMessage *msg)
     }
     else
     {
-        // TODO: for each packet in the received frame (msg) belonging to this terminal ...
+        Frame *frame = check_and_cast<Frame*>(msg);
+        for (int i = 0; i < frame->getBlocksArraySize(); ++i)
         {
-            // TODO: change with (simTime() - packet->getCreationTime()).dbl()
-            double delay = 0.01;
-            emit(delaySignal, delay);
-
-            EV_DEBUG << "[terminal " << id << "]> Received a packet of size "
-                    << "X" << " with a delay of " << delay << endl;
-
-            delete msg;
+           Block& block = frame->getBlocksForUpdate(i);
+           for (int j = 0; j < block.getPacketsArraySize(); ++j)
+           {
+               TerminalPacket* packet = block.getPacketsForUpdate(j);
+               if (packet != nullptr && packet->getTerminalId() == id)
+               {
+                   double delay = (simTime() - packet->getCreationTime()).dbl();
+                   emit(delaySignal, delay);
+                   EV_DEBUG << "[terminal " << id << "]> Received packet "
+                            << packet->getPacketId()
+                            << " with a delay of " << delay << endl;
+                   delete packet;
+               }
+           }
         }
+        delete frame;
     }
 
 }
