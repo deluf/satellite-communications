@@ -412,7 +412,7 @@ unsigned int BlockDescriptor::getFieldTypeFlags(int field) const
         field -= base->getFieldCount();
     }
     static unsigned int fieldTypeFlags[] = {
-        FD_ISEDITABLE,    // FIELD_codingRate
+        0,    // FIELD_codingRate
         FD_ISEDITABLE,    // FIELD_maxSize
         FD_ISEDITABLE,    // FIELD_usedSize
         FD_ISARRAY | FD_ISCOMPOUND | FD_ISCOBJECT | FD_ISCOWNEDOBJECT | FD_ISRESIZABLE,    // FIELD_packets
@@ -574,7 +574,6 @@ void BlockDescriptor::setFieldValueAsString(omnetpp::any_ptr object, int field, 
     }
     Block *pp = omnetpp::fromAnyPtr<Block>(object); (void)pp;
     switch (field) {
-        case FIELD_codingRate: pp->setCodingRate((CODING_RATE)string2enum(value, "CODING_RATE")); break;
         case FIELD_maxSize: pp->setMaxSize(string2long(value)); break;
         case FIELD_usedSize: pp->setUsedSize(string2long(value)); break;
         default: throw omnetpp::cRuntimeError("Cannot set field %d of class 'Block'", field);
@@ -611,7 +610,6 @@ void BlockDescriptor::setFieldValue(omnetpp::any_ptr object, int field, int i, c
     }
     Block *pp = omnetpp::fromAnyPtr<Block>(object); (void)pp;
     switch (field) {
-        case FIELD_codingRate: pp->setCodingRate(static_cast<CODING_RATE>(value.intValue())); break;
         case FIELD_maxSize: pp->setMaxSize(omnetpp::checked_int_cast<int>(value.intValue())); break;
         case FIELD_usedSize: pp->setUsedSize(omnetpp::checked_int_cast<int>(value.intValue())); break;
         default: throw omnetpp::cRuntimeError("Cannot set field %d of class 'Block'", field);
