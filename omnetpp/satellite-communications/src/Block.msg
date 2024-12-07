@@ -6,5 +6,5 @@ message Block
     CODING_RATE codingRate;
     int maxSize;
     int usedSize;
-    TerminalPacket packets[]; // Dynamic array of TerminalPacket
+    TerminalPacket* packets[]; 
 }
