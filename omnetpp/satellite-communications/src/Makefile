@@ -39,12 +39,16 @@ OBJS = \
     $O/PacketScheduler.o \
     $O/Satellite.o \
     $O/Terminal.o \
+    $O/Block_m.o \
     $O/codingRateMessage_m.o \
+    $O/Frame_m.o \
     $O/terminalPacket_m.o
 
 # Message files
 MSGFILES = \
+    Block.msg \
     codingRateMessage.msg \
+    Frame.msg \
     terminalPacket.msg
 
 # SM files

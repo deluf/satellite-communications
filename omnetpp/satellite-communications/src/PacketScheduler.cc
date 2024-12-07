@@ -106,6 +106,7 @@ void PacketScheduler::handleMessage(cMessage *msg)
             cTimestampedValue tmp(simTime() + SimTime(80, SIMTIME_MS), (intval_t)bitLength);
             emit(throughputSignal, &tmp);
             if (bitLength) sendDirect(frame, satellite, "in");
+            else delete frame;
 
             EV_DEBUG << "[packetScheduler]> Frame of size " << bitLength << " bits sent!" << endl;
         }
@@ -191,20 +192,21 @@ Frame *PacketScheduler::buildFrame()
                 if (remainingSize <= availableSpace)
                 {
                     block->setUsedSize(block->getUsedSize() + remainingSize);
-                    block->appendPackets(packet);
+                    block->appendPackets(*packet);
                     frame->setSize(frame->getSize() + remainingSize);
                     remainingSize = 0;
-                    terminal->queue.pop();
+                    delete terminal->queue.pop();
                 } else
                 {
                     /* Current block is full , we split the packet*/
                     TerminalPacket *packetSegment = packet->dup();
                     packetSegment->setByteLength(availableSpace);
                     block->setUsedSize(block->getMaxSize());
-                    block->appendPackets(packetSegment);
+                    block->appendPackets(*packetSegment);
                     frame->setSize(frame->getSize() + availableSpace);
                     remainingSize -= availableSpace;
                     packet->setByteLength(remainingSize);
+                    delete packetSegment;
 
                     /* Packet will be scheduled in the next block, must be initialized */
                     EV_DEBUG << "[packetScheduler]> Block " << currentBlockIndex

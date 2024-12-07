@@ -43,20 +43,21 @@ void Terminal::handleMessage(cMessage *msg)
     else
     {
         Frame *frame = check_and_cast<Frame*>(msg);
+        int lastPacketId = -1;
         for (int i = 0; i < frame->getBlocksArraySize(); ++i)
         {
            Block& block = frame->getBlocksForUpdate(i);
            for (int j = 0; j < block.getPacketsArraySize(); ++j)
            {
-               TerminalPacket* packet = block.getPacketsForUpdate(j);
-               if (packet != nullptr && packet->getTerminalId() == id)
+               TerminalPacket* packet = &block.getPacketsForUpdate(j);
+               int packetId = packet->getPacketId();
+               if (packet != nullptr && packet->getTerminalId() == id && packetId != lastPacketId)
                {
+                   lastPacketId = packetId;
                    double delay = (simTime() - packet->getCreationTime()).dbl();
                    emit(delaySignal, delay);
                    EV_DEBUG << "[terminal " << id << "]> Received packet "
-                            << packet->getPacketId()
-                            << " with a delay of " << delay << endl;
-                   delete packet;
+                            << packetId << " with a delay of " << delay << endl;
                }
            }
         }

@@ -29,7 +29,7 @@ class Block;
  *     CODING_RATE codingRate;
  *     int maxSize;
  *     int usedSize;
- *     TerminalPacket *packets[];
+ *     TerminalPacket packets[];
  * }
  * </pre>
  */
@@ -39,7 +39,7 @@ class Block : public ::omnetpp::cMessage
     CODING_RATE codingRate = static_cast<CODING_RATE>(-1);
     int maxSize = 0;
     int usedSize = 0;
-    TerminalPacket * *packets = nullptr;
+    TerminalPacket *packets = nullptr;
     size_t packets_arraysize = 0;
 
   private:
@@ -68,12 +68,12 @@ class Block : public ::omnetpp::cMessage
 
     virtual void setPacketsArraySize(size_t size);
     virtual size_t getPacketsArraySize() const;
-    virtual const TerminalPacket * getPackets(size_t k) const;
-    virtual TerminalPacket * getPacketsForUpdate(size_t k) { return const_cast<TerminalPacket *>(const_cast<Block*>(this)->getPackets(k));}
-    virtual void setPackets(size_t k, TerminalPacket * packets);
-    virtual void insertPackets(size_t k, TerminalPacket * packets);
-    [[deprecated]] void insertPackets(TerminalPacket * packets) {appendPackets(packets);}
-    virtual void appendPackets(TerminalPacket * packets);
+    virtual const TerminalPacket& getPackets(size_t k) const;
+    virtual TerminalPacket& getPacketsForUpdate(size_t k) { return const_cast<TerminalPacket&>(const_cast<Block*>(this)->getPackets(k));}
+    virtual void setPackets(size_t k, const TerminalPacket& packets);
+    virtual void insertPackets(size_t k, const TerminalPacket& packets);
+    [[deprecated]] void insertPackets(const TerminalPacket& packets) {appendPackets(packets);}
+    virtual void appendPackets(const TerminalPacket& packets);
     virtual void erasePackets(size_t k);
 };
 
