@@ -1,7 +1,7 @@
 
+#include <algorithm>
+
 #include "PacketScheduler.h"
-#include "terminalPacket_m.h"
-#include "Oracle.h" // TODO: Only used to convert coding rates to string literals
 
 Define_Module(PacketScheduler);
 
@@ -11,6 +11,10 @@ void PacketScheduler::initialize()
     throughputSignal = registerSignal("throughput");
 
     cModule *satCom = getParentModule()->getParentModule();
+
+    cModule *oracleModule = satCom->getSubmodule("oracle");
+    oracle = check_and_cast<Oracle*>(oracleModule);
+
     satellite = satCom->getSubmodule("satellite");
     numTerminals = satCom->par("N").intValue();
     blocksPerFrame = par("blocksPerFrame").intValue();
@@ -39,15 +43,14 @@ void PacketScheduler::initialize()
 
 void PacketScheduler::handleMessage(cMessage *msg)
 {
-    if (msg->isName("terminalPacket"))
+    if (msg->isName("packet"))
     {
-        TerminalPacket *terminalPacket = check_and_cast<TerminalPacket*>(msg);
+        Packet *packet = check_and_cast<Packet*>(msg);
 
-        // TODO: We don't really need the terminalId, since we should be able to deduce it from the arrival gate
-        int terminalId = terminalPacket->getTerminalId();
-        int byteLength = terminalPacket->getByteLength();
+        int terminalId = packet->getTerminalId();
+        int byteLength = packet->getByteLength();
 
-        terminals[terminalId].queue.insert(terminalPacket);
+        terminals[terminalId].queue.insert(packet);
 
         EV_DEBUG << "[packetScheduler]> terminal " << terminalId << " received a new packet of size " << byteLength << endl;
     }
@@ -55,10 +58,10 @@ void PacketScheduler::handleMessage(cMessage *msg)
     /* Message received from the satellite */
     else
     {
-        CodingRateMessage *codingRateMessage = check_and_cast<CodingRateMessage*>(msg);
+        CodingRatePacket *codingRatePacket = check_and_cast<CodingRatePacket*>(msg);
 
-        int terminalId = codingRateMessage->getTerminalId();
-        CODING_RATE codingRate = codingRateMessage->getCodingRate();
+        int terminalId = codingRatePacket->getTerminalId();
+        CODING_RATE codingRate = codingRatePacket->getCodingRate();
 
         terminals[terminalId].codingRate = codingRate;
         receivedCodingRates++;
@@ -75,9 +78,7 @@ void PacketScheduler::handleMessage(cMessage *msg)
             std::sort(
                 sortedTerminals.begin(), sortedTerminals.end(),
                 [](const TerminalStatus *a, const TerminalStatus *b)
-                {
-                    return a->codingRate > b->codingRate;
-                }
+                { return a->codingRate > b->codingRate; }
             );
 
             EV_DEBUG << "[packetScheduler]> Sorted terminals:" << endl;
@@ -91,7 +92,8 @@ void PacketScheduler::handleMessage(cMessage *msg)
             EV_DEBUG << "[packetScheduler]> Building the frame..." << endl;
 
             Frame *frame = buildFrame();
-            long bitLength = frame->getSize() * 8;
+
+            long bitLength = frame->getBitLength();
             debugTotalBitsSent += bitLength;
 
             /*
@@ -105,13 +107,20 @@ void PacketScheduler::handleMessage(cMessage *msg)
              */
             cTimestampedValue tmp(simTime() + SimTime(80, SIMTIME_MS), (intval_t)bitLength);
             emit(throughputSignal, &tmp);
-            if (bitLength) sendDirect(frame, satellite, "in");
-            else delete frame;
+
+            if (bitLength > 0)
+            {
+                sendDirect(frame, satellite, "in");
+            }
+            else
+            {
+                delete frame;
+            }
 
             EV_DEBUG << "[packetScheduler]> Frame of size " << bitLength << " bits sent!" << endl;
         }
 
-        delete codingRateMessage;
+        delete codingRatePacket;
     }
 }
 
@@ -142,10 +151,13 @@ void PacketScheduler::initBlock(Block* block, CODING_RATE codingRate)
 Frame *PacketScheduler::buildFrame()
 {
     Frame *frame = new Frame("frame");
-    frame->setSize(0);
+    frame->setByteLength(0);
 
     frame->setBlocksArraySize(blocksPerFrame);
-    for (int i = 0; i < blocksPerFrame; i++) frame->getBlocksForUpdate(i).setUsedSize(0);
+    for (int i = 0; i < blocksPerFrame; i++)
+    {
+        frame->getBlocksForUpdate(i).setUsedSize(0);
+    }
 
     int currentBlockIndex = 0;
     for (TerminalStatus *terminal : sortedTerminals)
@@ -155,7 +167,10 @@ Frame *PacketScheduler::buildFrame()
             Block* block = &frame->getBlocksForUpdate(currentBlockIndex);
 
             /* Initialize the block if empty */
-            if (block->getUsedSize() == 0) initBlock(block, terminal->codingRate);
+            if (block->getUsedSize() == 0)
+            {
+                initBlock(block, terminal->codingRate);
+            }
 
             /* Block's CR must be <= Terminal's CR */
             if (block->getCodingRate() > terminal->codingRate) {
@@ -166,7 +181,7 @@ Frame *PacketScheduler::buildFrame()
                 continue;
             }
 
-            TerminalPacket *packet = check_and_cast<TerminalPacket*>(terminal->queue.front());
+            Packet *packet = check_and_cast<Packet*>(terminal->queue.front());
             int remainingSize = packet->getByteLength();
             EV_DEBUG << "[packetScheduler]> Scheduling packet for terminal: " << packet->getTerminalId()
                      << " with size: " << packet->getByteLength() << " bytes" << endl;
@@ -192,21 +207,27 @@ Frame *PacketScheduler::buildFrame()
                 if (remainingSize <= availableSpace)
                 {
                     block->setUsedSize(block->getUsedSize() + remainingSize);
-                    block->appendPackets(*packet);
-                    frame->setSize(frame->getSize() + remainingSize);
+                    block->appendPackets(packet);
+                    frame->addByteLength(remainingSize);
                     remainingSize = 0;
-                    delete terminal->queue.pop();
-                } else
+                    terminal->queue.pop();
+                    oracle->registerPacket(terminal->id, currentBlockIndex, block->getPacketsArraySize() - 1);
+                    drop(packet);
+                }
+                else
                 {
                     /* Current block is full , we split the packet*/
-                    TerminalPacket *packetSegment = packet->dup();
+                    Packet *packetSegment = packet->dup();
                     packetSegment->setByteLength(availableSpace);
                     block->setUsedSize(block->getMaxSize());
-                    block->appendPackets(*packetSegment);
-                    frame->setSize(frame->getSize() + availableSpace);
+                    block->appendPackets(packetSegment);
+
+                    oracle->registerPacket(terminal->id, currentBlockIndex, block->getPacketsArraySize() - 1, false);
+                    drop(packetSegment);
+
+                    frame->addByteLength(availableSpace);
                     remainingSize -= availableSpace;
                     packet->setByteLength(remainingSize);
-                    delete packetSegment;
 
                     /* Packet will be scheduled in the next block, must be initialized */
                     EV_DEBUG << "[packetScheduler]> Block " << currentBlockIndex
@@ -220,14 +241,20 @@ Frame *PacketScheduler::buildFrame()
         if (currentBlockIndex == blocksPerFrame) break;
     }
 
-    EV_INFO << "[packetScheduler]> Finished building frame with size: "
-            << frame->getSize() << " bytes" << endl;
+    EV_DEBUG << "[packetScheduler]> Finished building frame with size: "
+            << frame->getByteLength() << " bytes" << endl;
     return frame;
 }
 
 
 void PacketScheduler::finish()
 {
+    // TODO: boh a sto punto fare anche delete dei vari timer
+    for (TerminalStatus& terminalStatus : terminals)
+    {
+        terminalStatus.queue.clear();
+    }
+
     EV_DEBUG << "### Simulation finished ###" << endl
             << "\tTotal number of bits sent: " << debugTotalBitsSent << endl
             << "\tSimulation time: " << simTime() << " s" << endl

@@ -2,54 +2,56 @@
 #include <iomanip>
 
 #include "PacketGenerator.h"
-#include "terminalPacket_m.h"
+#include "Packet_m.h"
 
 Define_Module(PacketGenerator);
 
 
 void PacketGenerator::initialize()
 {
-    terminalId = getIndex();
-    meanT = par("meanT").doubleValue();
-    minS = par("minS").intValue();
-    maxS = par("maxS").intValue();
+    meanPacketInterarrivalTime = par("meanPacketInterarrivalTime").doubleValue();
+    minPacketSize = par("minPacketSize").intValue();
+    maxPacketSize = par("maxPacketSize").intValue();
+    id = getIndex();
+
     timer = new cMessage("timer");
-    double nextArrivalTime = exponential(meanT);
+    double nextArrivalTime = exponential(meanPacketInterarrivalTime);
     scheduleAt(simTime() + SimTime(nextArrivalTime), timer);
 
-    // EV_INFO << std::fixed << std::setprecision(5) << simTime().dbl() << " - [packetGenerator " << terminalId << "]> Extracted T for terminal " << terminalId << " | Total: " << getRNG(0)->getNumbersDrawn() << endl;
+#ifdef RNG_DEBUG
+    EV_DEBUG << std::fixed << std::setprecision(5) << simTime().dbl() << " - [packetGenerator " << id << "]> Extracted T for terminal " << id << " | Total: " << getRNG(0)->getNumbersDrawn() << endl;
+#endif
 
-    EV_DEBUG << "[packetGenerator " << terminalId << "]> the first packet for terminal " << terminalId
-            << " is scheduled to arrive in " << nextArrivalTime * 1e3 << " ms" << endl;
+    EV_DEBUG << "[packetGenerator " << id << "]> the first packet is scheduled to arrive in "
+            << nextArrivalTime * 1e3 << " ms" << endl;
 }
 
 void PacketGenerator::handleMessage(cMessage *msg)
 {
-    if (!msg->isSelfMessage())
-    {
-        // TODO: Error
-    }
+    /*
+     * Received messages are always self messages (timers) by design (there are no input ports).
+     */
 
-    int byteLength = intuniform(minS, maxS);
+    int byteLength = intuniform(minPacketSize, maxPacketSize);
+
+    Packet *packet = new Packet("packet");
+    packet->setTerminalId(id);
+    packet->setByteLength(byteLength);
+    send(packet, "out");
 
     // EV_INFO << std::fixed << std::setprecision(5) << simTime().dbl() << " - [packetGenerator " << getIndex() << "]> Extracted S for terminal " << getIndex() << " | Total: " << getRNG(0)->getNumbersDrawn() << endl;
-    EV_DEBUG <<"[packetGenerator " << terminalId << "]> Generated packet id: " << packetId << endl;
-    TerminalPacket *terminalPacket = new TerminalPacket("terminalPacket");
-    terminalPacket->setTerminalId(terminalId);
-    terminalPacket->setPacketId(packetId++);
-    terminalPacket->setByteLength(byteLength);
-    send(terminalPacket, "out");
+    EV_DEBUG <<"[packetGenerator " << id << "]> Generated packet with id: " << packet->getTreeId() << endl;
 
-    double nextArrivalTime = exponential(meanT);
+    double nextArrivalTime = exponential(meanPacketInterarrivalTime);
     scheduleAt(simTime() + SimTime(nextArrivalTime), timer);
 
     // EV_INFO << std::fixed << std::setprecision(5) << simTime().dbl() << " - [packetGenerator " << getIndex() << "]> Extracted T for terminal " << getIndex() << " | Total: " << getRNG(0)->getNumbersDrawn() << endl;
 
-    EV_DEBUG << "[packetGenerator " << terminalId << "]> the next packet for terminal " << terminalId <<
-                    " is scheduled to arrive in " << nextArrivalTime * 1e3 << " ms" << endl;
+    EV_DEBUG << "[packetGenerator " << id << "]> the next packet is scheduled to arrive in "
+            << nextArrivalTime * 1e3 << " ms" << endl;
 }
 
 void PacketGenerator::finish()
 {
-
+    cancelAndDelete(timer);
 }

@@ -6,11 +6,6 @@ Define_Module(Satellite);
 
 void Satellite::initialize()
 {
-    /*
-     * Keeping a pointer to the ground station and to all the terminals,
-     * so that we don't have to fetch them each time later on
-     */
-
     cModule *satCom = getParentModule();
     terminals.resize(satCom->par("N").intValue());
     int i = 0;
@@ -43,10 +38,10 @@ void Satellite::handleMessage(cMessage *msg)
         /* Since we are duplicating it, the original message can be deleted */
         delete msg;
     }
-
-}
-
-void Satellite::finish()
-{
+    else
+    {
+        throw cRuntimeError(this, "The satellite can't handle the received "
+                "message. Supported types are: \"codingRate\", \"frame\"");
+    }
 
 }

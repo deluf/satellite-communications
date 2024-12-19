@@ -2,8 +2,7 @@
 #include <iomanip>
 
 #include "Terminal.h"
-#include "codingRateMessage_m.h"
-#include "Oracle.h" // TODO: Only used to convert coding rates to string literals
+#include "CodingRatePacket_m.h"
 #include "Frame_m.h"
 
 Define_Module(Terminal);
@@ -11,7 +10,13 @@ Define_Module(Terminal);
 
 void Terminal::initialize()
 {
-    satellite = getParentModule()->getSubmodule("satellite");
+    cModule *satCom = getParentModule();
+
+    cModule *oracleModule = satCom->getSubmodule("oracle");
+    oracle = check_and_cast<Oracle*>(oracleModule);
+
+    satellite = satCom->getSubmodule("satellite");
+
     delaySignal = registerSignal("delay");
     id = getIndex();
     timer = new cMessage("timer");
@@ -31,11 +36,11 @@ void Terminal::handleMessage(cMessage *msg)
         // TODO: Check if i can do something like #ifdef DEBUG_RNGS then ...
         // EV_INFO << std::fixed << std::setprecision(5) << simTime().dbl() << " - [terminal " << getIndex() << "]> Extracted CR | Total: " << getRNG(0)->getNumbersDrawn() << endl;
 
-        CodingRateMessage *codingRateMessage = new CodingRateMessage("codingRate");
-        codingRateMessage->setTerminalId(id);
-        codingRateMessage->setCodingRate(codingRate);
+        CodingRatePacket *codingRatePacket = new CodingRatePacket("codingRate");
+        codingRatePacket->setTerminalId(id);
+        codingRatePacket->setCodingRate(codingRate);
 
-        sendDirect(codingRateMessage, satellite, "in");
+        sendDirect(codingRatePacket, satellite, "in");
 
         EV_DEBUG << "[terminal " << id << "]> My coding rate is now "
                 << codingRateToString[codingRate] << endl;
@@ -43,24 +48,38 @@ void Terminal::handleMessage(cMessage *msg)
     else
     {
         Frame *frame = check_and_cast<Frame*>(msg);
-        int lastPacketId = -1;
-        for (int i = 0; i < frame->getBlocksArraySize(); ++i)
+
+        std::list<PacketLocation> &packetLocations = oracle->getPacketLocations(id);
+
+        while (!packetLocations.empty())
         {
-           Block& block = frame->getBlocksForUpdate(i);
-           for (int j = 0; j < block.getPacketsArraySize(); ++j)
-           {
-               TerminalPacket* packet = &block.getPacketsForUpdate(j);
-               int packetId = packet->getPacketId();
-               if (packet != nullptr && packet->getTerminalId() == id && packetId != lastPacketId)
-               {
-                   lastPacketId = packetId;
-                   double delay = (simTime() - packet->getCreationTime()).dbl();
-                   emit(delaySignal, delay);
-                   EV_DEBUG << "[terminal " << id << "]> Received packet "
-                            << packetId << " with a delay of " << delay << endl;
-               }
-           }
+            PacketLocation &packetLocation = packetLocations.front();
+
+            int blockIndex = packetLocation.blockIndex;
+            int packetIndex = packetLocation.packetIndex;
+
+            Block *block = &frame->getBlocksForUpdate(blockIndex);
+            Packet *packet = block->getPacketsForUpdate(packetIndex);
+
+            EV_DEBUG << "[terminal " << id << "]> Fetched { blockIndex: " << packetLocation.blockIndex
+                    << ", packetIndex: " << packetLocation.packetIndex << ", lastPiece: "
+                    << packetLocation.isLastSegment << "}" << endl;
+
+            // TOOD: if packet->terminalId != id error or something
+
+            if (packetLocation.isLastSegment) {
+                double delay = (simTime() - packet->getCreationTime()).dbl();
+                emit(delaySignal, delay);
+                EV_DEBUG << "[terminal " << id << "]> Received packet "
+                        << packet->getTreeId() << " with a delay of " << delay * 1e3 << " ms" << endl;
+            }
+
+            take(packet);
+            delete packet;
+
+            packetLocations.pop_front();
         }
+
         delete frame;
     }
 
@@ -68,5 +87,5 @@ void Terminal::handleMessage(cMessage *msg)
 
 void Terminal::finish()
 {
-
+    cancelAndDelete(timer);
 }

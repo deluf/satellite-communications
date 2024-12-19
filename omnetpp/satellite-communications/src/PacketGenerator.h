@@ -5,15 +5,14 @@
 #include "omnetpp.h"
 
 using namespace omnetpp;
-static int packetId;
 
 class PacketGenerator : public cSimpleModule
 {
     cMessage *timer;
-    int terminalId;
-    int minS;
-    int maxS;
-    double meanT;
+    int id;
+    int minPacketSize;
+    int maxPacketSize;
+    double meanPacketInterarrivalTime;
 
 protected:
     virtual void initialize() override;

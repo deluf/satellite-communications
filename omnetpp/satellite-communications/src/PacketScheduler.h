@@ -5,8 +5,9 @@
 #include <vector>
 
 #include "omnetpp.h"
+#include "Oracle.h"
 #include "Frame_m.h"
-#include "codingRateMessage_m.h"
+#include "CodingRatePacket_m.h"
 
 using namespace omnetpp;
 
@@ -19,6 +20,7 @@ struct TerminalStatus
 
 class PacketScheduler : public cSimpleModule
 {
+    Oracle *oracle;
     cModule *satellite;
     simsignal_t throughputSignal;
     std::vector<TerminalStatus> terminals;

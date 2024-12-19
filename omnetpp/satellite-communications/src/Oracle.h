@@ -2,20 +2,34 @@
 #ifndef ORACLE_H_
 #define ORACLE_H_
 
+#include <vector>
+#include <list>
+
 #include "omnetpp.h"
 
 using namespace omnetpp;
 
-static const char *codingRateToString[7] = {
-    "L3", "L2", "L1", "R", "H1", "H2", "H3"
+struct PacketLocation
+{
+    int blockIndex;
+    int packetIndex;
+    /*
+     * Packets may be segmented into multiple blocks.
+     * This boolean allows a terminal reading its packets to emit
+     *  a delay statistic only when the whole packet is fetched.
+     */
+    bool isLastSegment;
 };
 
 class Oracle : public cSimpleModule
 {
+    std::vector<std::list<PacketLocation>> packetLocations;
+
 protected:
     virtual void initialize() override;
-    virtual void handleMessage(cMessage *msg) override;
-    virtual void finish() override;
+public:
+    void registerPacket(int terminalId, int blockIndex, int packetIndex, bool isLastSegment = true);
+    std::list<PacketLocation>& getPacketLocations(int terminalId);
 };
 
 #endif /* ORACLE_H_ */

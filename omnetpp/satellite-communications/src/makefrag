@@ -1,0 +1,9 @@
+
+# Flags:
+# 	- DEBUG_RNG :
+# 	- DEBUG_SCHEDULER :
+# 	- DEBUG_TERMINALS :
+# fare clean e poi make di nuovo
+
+
+#CFLAGS += -DRNG_DEBUG

@@ -1,0 +1,5 @@
+
+packet Packet
+{
+    int terminalId;
+};

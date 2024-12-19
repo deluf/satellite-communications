@@ -8,11 +8,11 @@ simple PacketScheduler
         @signal[throughput](type=long);
         @statistic[throughputStat]
         (
-        	source=sumPerDuration(throughput);
-        	record=last,vector;
-        	unit="bps"; 
-        ); // TODO: vector metric only collected for debugging purposes
-
+        	source = sumPerDuration(throughput);
+        	record = last, vector;
+        	title = "Throughput";
+        	unit = "bps"; 
+        );
         @display("i=block/join");
         
     gates:

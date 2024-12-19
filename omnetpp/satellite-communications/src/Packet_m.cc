@@ -1,5 +1,5 @@
 //
-// Generated file, do not edit! Created by opp_msgtool 6.0 from Block.msg.
+// Generated file, do not edit! Created by opp_msgtool 6.0 from Packet.msg.
 //
 
 // Disable warnings about unused variables, empty switch stmts, etc:
@@ -28,7 +28,7 @@
 #include <sstream>
 #include <memory>
 #include <type_traits>
-#include "Block_m.h"
+#include "Packet_m.h"
 
 namespace omnetpp {
 
@@ -150,194 +150,66 @@ void doParsimUnpacking(omnetpp::cCommBuffer *, T& t)
 
 }  // namespace omnetpp
 
-Register_Class(Block)
+Register_Class(Packet)
 
-Block::Block(const char *name, short kind) : ::omnetpp::cMessage(name, kind)
+Packet::Packet(const char *name, short kind) : ::omnetpp::cPacket(name, kind)
 {
 }
 
-Block::Block(const Block& other) : ::omnetpp::cMessage(other)
+Packet::Packet(const Packet& other) : ::omnetpp::cPacket(other)
 {
     copy(other);
 }
 
-Block::~Block()
+Packet::~Packet()
 {
-    for (size_t i = 0; i < packets_arraysize; i++)
-        drop(&this->packets[i]);
-    delete [] this->packets;
 }
 
-Block& Block::operator=(const Block& other)
+Packet& Packet::operator=(const Packet& other)
 {
     if (this == &other) return *this;
-    ::omnetpp::cMessage::operator=(other);
+    ::omnetpp::cPacket::operator=(other);
     copy(other);
     return *this;
 }
 
-void Block::copy(const Block& other)
+void Packet::copy(const Packet& other)
 {
-    this->codingRate = other.codingRate;
-    this->maxSize = other.maxSize;
-    this->usedSize = other.usedSize;
-    for (size_t i = 0; i < packets_arraysize; i++)
-        drop(&this->packets[i]);
-    delete [] this->packets;
-    this->packets = (other.packets_arraysize==0) ? nullptr : new TerminalPacket[other.packets_arraysize];
-    packets_arraysize = other.packets_arraysize;
-    for (size_t i = 0; i < packets_arraysize; i++) {
-        this->packets[i] = other.packets[i];
-        this->packets[i].setName(other.packets[i].getName());
-        take(&this->packets[i]);
-    }
+    this->terminalId = other.terminalId;
 }
 
-void Block::parsimPack(omnetpp::cCommBuffer *b) const
+void Packet::parsimPack(omnetpp::cCommBuffer *b) const
 {
-    ::omnetpp::cMessage::parsimPack(b);
-    doParsimPacking(b,this->codingRate);
-    doParsimPacking(b,this->maxSize);
-    doParsimPacking(b,this->usedSize);
-    b->pack(packets_arraysize);
-    doParsimArrayPacking(b,this->packets,packets_arraysize);
+    ::omnetpp::cPacket::parsimPack(b);
+    doParsimPacking(b,this->terminalId);
 }
 
-void Block::parsimUnpack(omnetpp::cCommBuffer *b)
+void Packet::parsimUnpack(omnetpp::cCommBuffer *b)
 {
-    ::omnetpp::cMessage::parsimUnpack(b);
-    doParsimUnpacking(b,this->codingRate);
-    doParsimUnpacking(b,this->maxSize);
-    doParsimUnpacking(b,this->usedSize);
-    delete [] this->packets;
-    b->unpack(packets_arraysize);
-    if (packets_arraysize == 0) {
-        this->packets = nullptr;
-    } else {
-        this->packets = new TerminalPacket[packets_arraysize];
-        doParsimArrayUnpacking(b,this->packets,packets_arraysize);
-    }
+    ::omnetpp::cPacket::parsimUnpack(b);
+    doParsimUnpacking(b,this->terminalId);
 }
 
-CODING_RATE Block::getCodingRate() const
+int Packet::getTerminalId() const
 {
-    return this->codingRate;
+    return this->terminalId;
 }
 
-void Block::setCodingRate(CODING_RATE codingRate)
+void Packet::setTerminalId(int terminalId)
 {
-    this->codingRate = codingRate;
+    this->terminalId = terminalId;
 }
 
-int Block::getMaxSize() const
-{
-    return this->maxSize;
-}
-
-void Block::setMaxSize(int maxSize)
-{
-    this->maxSize = maxSize;
-}
-
-int Block::getUsedSize() const
-{
-    return this->usedSize;
-}
-
-void Block::setUsedSize(int usedSize)
-{
-    this->usedSize = usedSize;
-}
-
-size_t Block::getPacketsArraySize() const
-{
-    return packets_arraysize;
-}
-
-const TerminalPacket& Block::getPackets(size_t k) const
-{
-    if (k >= packets_arraysize) throw omnetpp::cRuntimeError("Array of size %lu indexed by %lu", (unsigned long)packets_arraysize, (unsigned long)k);
-    return this->packets[k];
-}
-
-void Block::setPacketsArraySize(size_t newSize)
-{
-    TerminalPacket *packets2 = (newSize==0) ? nullptr : new TerminalPacket[newSize];
-    size_t minSize = packets_arraysize < newSize ? packets_arraysize : newSize;
-    for (size_t i = 0; i < minSize; i++)
-        packets2[i] = this->packets[i];
-    for (size_t i = 0; i < packets_arraysize; i++)
-        drop(&this->packets[i]);
-    delete [] this->packets;
-    this->packets = packets2;
-    packets_arraysize = newSize;
-    for (size_t i = 0; i < packets_arraysize; i++)
-        take(&this->packets[i]);
-}
-
-void Block::setPackets(size_t k, const TerminalPacket& packets)
-{
-    if (k >= packets_arraysize) throw omnetpp::cRuntimeError("Array of size %lu indexed by %lu", (unsigned long)packets_arraysize, (unsigned long)k);
-    this->packets[k] = packets;
-}
-
-void Block::insertPackets(size_t k, const TerminalPacket& packets)
-{
-    if (k > packets_arraysize) throw omnetpp::cRuntimeError("Array of size %lu indexed by %lu", (unsigned long)packets_arraysize, (unsigned long)k);
-    size_t newSize = packets_arraysize + 1;
-    TerminalPacket *packets2 = new TerminalPacket[newSize];
-    size_t i;
-    for (i = 0; i < k; i++)
-        packets2[i] = this->packets[i];
-    packets2[k] = packets;
-    for (i = k + 1; i < newSize; i++)
-        packets2[i] = this->packets[i-1];
-    for (size_t i = 0; i < packets_arraysize; i++)
-        drop(&this->packets[i]);
-    delete [] this->packets;
-    this->packets = packets2;
-    packets_arraysize = newSize;
-    for (size_t i = 0; i < packets_arraysize; i++)
-        take(&this->packets[i]);
-}
-
-void Block::appendPackets(const TerminalPacket& packets)
-{
-    insertPackets(packets_arraysize, packets);
-}
-
-void Block::erasePackets(size_t k)
-{
-    if (k >= packets_arraysize) throw omnetpp::cRuntimeError("Array of size %lu indexed by %lu", (unsigned long)packets_arraysize, (unsigned long)k);
-    size_t newSize = packets_arraysize - 1;
-    TerminalPacket *packets2 = (newSize == 0) ? nullptr : new TerminalPacket[newSize];
-    size_t i;
-    for (i = 0; i < k; i++)
-        packets2[i] = this->packets[i];
-    for (i = k; i < newSize; i++)
-        packets2[i] = this->packets[i+1];
-    for (size_t i = 0; i < packets_arraysize; i++)
-        drop(&this->packets[i]);
-    delete [] this->packets;
-    this->packets = packets2;
-    packets_arraysize = newSize;
-    for (size_t i = 0; i < packets_arraysize; i++)
-        take(&this->packets[i]);
-}
-
-class BlockDescriptor : public omnetpp::cClassDescriptor
+class PacketDescriptor : public omnetpp::cClassDescriptor
 {
   private:
     mutable const char **propertyNames;
     enum FieldConstants {
-        FIELD_codingRate,
-        FIELD_maxSize,
-        FIELD_usedSize,
-        FIELD_packets,
+        FIELD_terminalId,
     };
   public:
-    BlockDescriptor();
-    virtual ~BlockDescriptor();
+    PacketDescriptor();
+    virtual ~PacketDescriptor();
 
     virtual bool doesSupport(omnetpp::cObject *obj) const override;
     virtual const char **getPropertyNames() const override;
@@ -363,24 +235,24 @@ class BlockDescriptor : public omnetpp::cClassDescriptor
     virtual void setFieldStructValuePointer(omnetpp::any_ptr object, int field, int i, omnetpp::any_ptr ptr) const override;
 };
 
-Register_ClassDescriptor(BlockDescriptor)
+Register_ClassDescriptor(PacketDescriptor)
 
-BlockDescriptor::BlockDescriptor() : omnetpp::cClassDescriptor(omnetpp::opp_typename(typeid(Block)), "omnetpp::cMessage")
+PacketDescriptor::PacketDescriptor() : omnetpp::cClassDescriptor(omnetpp::opp_typename(typeid(Packet)), "omnetpp::cPacket")
 {
     propertyNames = nullptr;
 }
 
-BlockDescriptor::~BlockDescriptor()
+PacketDescriptor::~PacketDescriptor()
 {
     delete[] propertyNames;
 }
 
-bool BlockDescriptor::doesSupport(omnetpp::cObject *obj) const
+bool PacketDescriptor::doesSupport(omnetpp::cObject *obj) const
 {
-    return dynamic_cast<Block *>(obj)!=nullptr;
+    return dynamic_cast<Packet *>(obj)!=nullptr;
 }
 
-const char **BlockDescriptor::getPropertyNames() const
+const char **PacketDescriptor::getPropertyNames() const
 {
     if (!propertyNames) {
         static const char *names[] = {  nullptr };
@@ -391,19 +263,19 @@ const char **BlockDescriptor::getPropertyNames() const
     return propertyNames;
 }
 
-const char *BlockDescriptor::getProperty(const char *propertyName) const
+const char *PacketDescriptor::getProperty(const char *propertyName) const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
     return base ? base->getProperty(propertyName) : nullptr;
 }
 
-int BlockDescriptor::getFieldCount() const
+int PacketDescriptor::getFieldCount() const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
-    return base ? 4+base->getFieldCount() : 4;
+    return base ? 1+base->getFieldCount() : 1;
 }
 
-unsigned int BlockDescriptor::getFieldTypeFlags(int field) const
+unsigned int PacketDescriptor::getFieldTypeFlags(int field) const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
     if (base) {
@@ -412,15 +284,12 @@ unsigned int BlockDescriptor::getFieldTypeFlags(int field) const
         field -= base->getFieldCount();
     }
     static unsigned int fieldTypeFlags[] = {
-        0,    // FIELD_codingRate
-        FD_ISEDITABLE,    // FIELD_maxSize
-        FD_ISEDITABLE,    // FIELD_usedSize
-        FD_ISARRAY | FD_ISCOMPOUND | FD_ISCOBJECT | FD_ISCOWNEDOBJECT | FD_ISRESIZABLE,    // FIELD_packets
+        FD_ISEDITABLE,    // FIELD_terminalId
     };
-    return (field >= 0 && field < 4) ? fieldTypeFlags[field] : 0;
+    return (field >= 0 && field < 1) ? fieldTypeFlags[field] : 0;
 }
 
-const char *BlockDescriptor::getFieldName(int field) const
+const char *PacketDescriptor::getFieldName(int field) const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
     if (base) {
@@ -429,26 +298,20 @@ const char *BlockDescriptor::getFieldName(int field) const
         field -= base->getFieldCount();
     }
     static const char *fieldNames[] = {
-        "codingRate",
-        "maxSize",
-        "usedSize",
-        "packets",
+        "terminalId",
     };
-    return (field >= 0 && field < 4) ? fieldNames[field] : nullptr;
+    return (field >= 0 && field < 1) ? fieldNames[field] : nullptr;
 }
 
-int BlockDescriptor::findField(const char *fieldName) const
+int PacketDescriptor::findField(const char *fieldName) const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
     int baseIndex = base ? base->getFieldCount() : 0;
-    if (strcmp(fieldName, "codingRate") == 0) return baseIndex + 0;
-    if (strcmp(fieldName, "maxSize") == 0) return baseIndex + 1;
-    if (strcmp(fieldName, "usedSize") == 0) return baseIndex + 2;
-    if (strcmp(fieldName, "packets") == 0) return baseIndex + 3;
+    if (strcmp(fieldName, "terminalId") == 0) return baseIndex + 0;
     return base ? base->findField(fieldName) : -1;
 }
 
-const char *BlockDescriptor::getFieldTypeString(int field) const
+const char *PacketDescriptor::getFieldTypeString(int field) const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
     if (base) {
@@ -457,15 +320,12 @@ const char *BlockDescriptor::getFieldTypeString(int field) const
         field -= base->getFieldCount();
     }
     static const char *fieldTypeStrings[] = {
-        "CODING_RATE",    // FIELD_codingRate
-        "int",    // FIELD_maxSize
-        "int",    // FIELD_usedSize
-        "TerminalPacket",    // FIELD_packets
+        "int",    // FIELD_terminalId
     };
-    return (field >= 0 && field < 4) ? fieldTypeStrings[field] : nullptr;
+    return (field >= 0 && field < 1) ? fieldTypeStrings[field] : nullptr;
 }
 
-const char **BlockDescriptor::getFieldPropertyNames(int field) const
+const char **PacketDescriptor::getFieldPropertyNames(int field) const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
     if (base) {
@@ -474,15 +334,11 @@ const char **BlockDescriptor::getFieldPropertyNames(int field) const
         field -= base->getFieldCount();
     }
     switch (field) {
-        case FIELD_codingRate: {
-            static const char *names[] = { "enum",  nullptr };
-            return names;
-        }
         default: return nullptr;
     }
 }
 
-const char *BlockDescriptor::getFieldProperty(int field, const char *propertyName) const
+const char *PacketDescriptor::getFieldProperty(int field, const char *propertyName) const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
     if (base) {
@@ -491,14 +347,11 @@ const char *BlockDescriptor::getFieldProperty(int field, const char *propertyNam
         field -= base->getFieldCount();
     }
     switch (field) {
-        case FIELD_codingRate:
-            if (!strcmp(propertyName, "enum")) return "CODING_RATE";
-            return nullptr;
         default: return nullptr;
     }
 }
 
-int BlockDescriptor::getFieldArraySize(omnetpp::any_ptr object, int field) const
+int PacketDescriptor::getFieldArraySize(omnetpp::any_ptr object, int field) const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
     if (base) {
@@ -506,14 +359,13 @@ int BlockDescriptor::getFieldArraySize(omnetpp::any_ptr object, int field) const
             return base->getFieldArraySize(object, field);
         field -= base->getFieldCount();
     }
-    Block *pp = omnetpp::fromAnyPtr<Block>(object); (void)pp;
+    Packet *pp = omnetpp::fromAnyPtr<Packet>(object); (void)pp;
     switch (field) {
-        case FIELD_packets: return pp->getPacketsArraySize();
         default: return 0;
     }
 }
 
-void BlockDescriptor::setFieldArraySize(omnetpp::any_ptr object, int field, int size) const
+void PacketDescriptor::setFieldArraySize(omnetpp::any_ptr object, int field, int size) const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
     if (base) {
@@ -523,14 +375,13 @@ void BlockDescriptor::setFieldArraySize(omnetpp::any_ptr object, int field, int 
         }
         field -= base->getFieldCount();
     }
-    Block *pp = omnetpp::fromAnyPtr<Block>(object); (void)pp;
+    Packet *pp = omnetpp::fromAnyPtr<Packet>(object); (void)pp;
     switch (field) {
-        case FIELD_packets: pp->setPacketsArraySize(size); break;
-        default: throw omnetpp::cRuntimeError("Cannot set array size of field %d of class 'Block'", field);
+        default: throw omnetpp::cRuntimeError("Cannot set array size of field %d of class 'Packet'", field);
     }
 }
 
-const char *BlockDescriptor::getFieldDynamicTypeString(omnetpp::any_ptr object, int field, int i) const
+const char *PacketDescriptor::getFieldDynamicTypeString(omnetpp::any_ptr object, int field, int i) const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
     if (base) {
@@ -538,13 +389,13 @@ const char *BlockDescriptor::getFieldDynamicTypeString(omnetpp::any_ptr object, 
             return base->getFieldDynamicTypeString(object,field,i);
         field -= base->getFieldCount();
     }
-    Block *pp = omnetpp::fromAnyPtr<Block>(object); (void)pp;
+    Packet *pp = omnetpp::fromAnyPtr<Packet>(object); (void)pp;
     switch (field) {
         default: return nullptr;
     }
 }
 
-std::string BlockDescriptor::getFieldValueAsString(omnetpp::any_ptr object, int field, int i) const
+std::string PacketDescriptor::getFieldValueAsString(omnetpp::any_ptr object, int field, int i) const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
     if (base) {
@@ -552,17 +403,14 @@ std::string BlockDescriptor::getFieldValueAsString(omnetpp::any_ptr object, int 
             return base->getFieldValueAsString(object,field,i);
         field -= base->getFieldCount();
     }
-    Block *pp = omnetpp::fromAnyPtr<Block>(object); (void)pp;
+    Packet *pp = omnetpp::fromAnyPtr<Packet>(object); (void)pp;
     switch (field) {
-        case FIELD_codingRate: return enum2string(pp->getCodingRate(), "CODING_RATE");
-        case FIELD_maxSize: return long2string(pp->getMaxSize());
-        case FIELD_usedSize: return long2string(pp->getUsedSize());
-        case FIELD_packets: return pp->getPackets(i).str();
+        case FIELD_terminalId: return long2string(pp->getTerminalId());
         default: return "";
     }
 }
 
-void BlockDescriptor::setFieldValueAsString(omnetpp::any_ptr object, int field, int i, const char *value) const
+void PacketDescriptor::setFieldValueAsString(omnetpp::any_ptr object, int field, int i, const char *value) const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
     if (base) {
@@ -572,15 +420,14 @@ void BlockDescriptor::setFieldValueAsString(omnetpp::any_ptr object, int field, 
         }
         field -= base->getFieldCount();
     }
-    Block *pp = omnetpp::fromAnyPtr<Block>(object); (void)pp;
+    Packet *pp = omnetpp::fromAnyPtr<Packet>(object); (void)pp;
     switch (field) {
-        case FIELD_maxSize: pp->setMaxSize(string2long(value)); break;
-        case FIELD_usedSize: pp->setUsedSize(string2long(value)); break;
-        default: throw omnetpp::cRuntimeError("Cannot set field %d of class 'Block'", field);
+        case FIELD_terminalId: pp->setTerminalId(string2long(value)); break;
+        default: throw omnetpp::cRuntimeError("Cannot set field %d of class 'Packet'", field);
     }
 }
 
-omnetpp::cValue BlockDescriptor::getFieldValue(omnetpp::any_ptr object, int field, int i) const
+omnetpp::cValue PacketDescriptor::getFieldValue(omnetpp::any_ptr object, int field, int i) const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
     if (base) {
@@ -588,17 +435,14 @@ omnetpp::cValue BlockDescriptor::getFieldValue(omnetpp::any_ptr object, int fiel
             return base->getFieldValue(object,field,i);
         field -= base->getFieldCount();
     }
-    Block *pp = omnetpp::fromAnyPtr<Block>(object); (void)pp;
+    Packet *pp = omnetpp::fromAnyPtr<Packet>(object); (void)pp;
     switch (field) {
-        case FIELD_codingRate: return static_cast<int>(pp->getCodingRate());
-        case FIELD_maxSize: return pp->getMaxSize();
-        case FIELD_usedSize: return pp->getUsedSize();
-        case FIELD_packets: return omnetpp::toAnyPtr(&pp->getPackets(i)); break;
-        default: throw omnetpp::cRuntimeError("Cannot return field %d of class 'Block' as cValue -- field index out of range?", field);
+        case FIELD_terminalId: return pp->getTerminalId();
+        default: throw omnetpp::cRuntimeError("Cannot return field %d of class 'Packet' as cValue -- field index out of range?", field);
     }
 }
 
-void BlockDescriptor::setFieldValue(omnetpp::any_ptr object, int field, int i, const omnetpp::cValue& value) const
+void PacketDescriptor::setFieldValue(omnetpp::any_ptr object, int field, int i, const omnetpp::cValue& value) const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
     if (base) {
@@ -608,15 +452,14 @@ void BlockDescriptor::setFieldValue(omnetpp::any_ptr object, int field, int i, c
         }
         field -= base->getFieldCount();
     }
-    Block *pp = omnetpp::fromAnyPtr<Block>(object); (void)pp;
+    Packet *pp = omnetpp::fromAnyPtr<Packet>(object); (void)pp;
     switch (field) {
-        case FIELD_maxSize: pp->setMaxSize(omnetpp::checked_int_cast<int>(value.intValue())); break;
-        case FIELD_usedSize: pp->setUsedSize(omnetpp::checked_int_cast<int>(value.intValue())); break;
-        default: throw omnetpp::cRuntimeError("Cannot set field %d of class 'Block'", field);
+        case FIELD_terminalId: pp->setTerminalId(omnetpp::checked_int_cast<int>(value.intValue())); break;
+        default: throw omnetpp::cRuntimeError("Cannot set field %d of class 'Packet'", field);
     }
 }
 
-const char *BlockDescriptor::getFieldStructName(int field) const
+const char *PacketDescriptor::getFieldStructName(int field) const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
     if (base) {
@@ -625,12 +468,11 @@ const char *BlockDescriptor::getFieldStructName(int field) const
         field -= base->getFieldCount();
     }
     switch (field) {
-        case FIELD_packets: return omnetpp::opp_typename(typeid(TerminalPacket));
         default: return nullptr;
     };
 }
 
-omnetpp::any_ptr BlockDescriptor::getFieldStructValuePointer(omnetpp::any_ptr object, int field, int i) const
+omnetpp::any_ptr PacketDescriptor::getFieldStructValuePointer(omnetpp::any_ptr object, int field, int i) const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
     if (base) {
@@ -638,14 +480,13 @@ omnetpp::any_ptr BlockDescriptor::getFieldStructValuePointer(omnetpp::any_ptr ob
             return base->getFieldStructValuePointer(object, field, i);
         field -= base->getFieldCount();
     }
-    Block *pp = omnetpp::fromAnyPtr<Block>(object); (void)pp;
+    Packet *pp = omnetpp::fromAnyPtr<Packet>(object); (void)pp;
     switch (field) {
-        case FIELD_packets: return omnetpp::toAnyPtr(&pp->getPackets(i)); break;
         default: return omnetpp::any_ptr(nullptr);
     }
 }
 
-void BlockDescriptor::setFieldStructValuePointer(omnetpp::any_ptr object, int field, int i, omnetpp::any_ptr ptr) const
+void PacketDescriptor::setFieldStructValuePointer(omnetpp::any_ptr object, int field, int i, omnetpp::any_ptr ptr) const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
     if (base) {
@@ -655,9 +496,9 @@ void BlockDescriptor::setFieldStructValuePointer(omnetpp::any_ptr object, int fi
         }
         field -= base->getFieldCount();
     }
-    Block *pp = omnetpp::fromAnyPtr<Block>(object); (void)pp;
+    Packet *pp = omnetpp::fromAnyPtr<Packet>(object); (void)pp;
     switch (field) {
-        default: throw omnetpp::cRuntimeError("Cannot set field %d of class 'Block'", field);
+        default: throw omnetpp::cRuntimeError("Cannot set field %d of class 'Packet'", field);
     }
 }
 

@@ -1,5 +1,5 @@
 //
-// Generated file, do not edit! Created by opp_msgtool 6.0 from codingRateMessage.msg.
+// Generated file, do not edit! Created by opp_msgtool 6.0 from CodingRatePacket.msg.
 //
 
 // Disable warnings about unused variables, empty switch stmts, etc:
@@ -28,7 +28,7 @@
 #include <sstream>
 #include <memory>
 #include <type_traits>
-#include "codingRateMessage_m.h"
+#include "CodingRatePacket_m.h"
 
 namespace omnetpp {
 
@@ -152,80 +152,66 @@ void doParsimUnpacking(omnetpp::cCommBuffer *, T& t)
 
 Register_Enum(CODING_RATE, (CODING_RATE::L3, CODING_RATE::L2, CODING_RATE::L1, CODING_RATE::R, CODING_RATE::H1, CODING_RATE::H2, CODING_RATE::H3));
 
-Register_Class(CodingRateMessage)
+Register_Class(CodingRatePacket)
 
-CodingRateMessage::CodingRateMessage(const char *name, short kind) : ::omnetpp::cMessage(name, kind)
+CodingRatePacket::CodingRatePacket(const char *name, short kind) : ::Packet(name, kind)
 {
 }
 
-CodingRateMessage::CodingRateMessage(const CodingRateMessage& other) : ::omnetpp::cMessage(other)
+CodingRatePacket::CodingRatePacket(const CodingRatePacket& other) : ::Packet(other)
 {
     copy(other);
 }
 
-CodingRateMessage::~CodingRateMessage()
+CodingRatePacket::~CodingRatePacket()
 {
 }
 
-CodingRateMessage& CodingRateMessage::operator=(const CodingRateMessage& other)
+CodingRatePacket& CodingRatePacket::operator=(const CodingRatePacket& other)
 {
     if (this == &other) return *this;
-    ::omnetpp::cMessage::operator=(other);
+    ::Packet::operator=(other);
     copy(other);
     return *this;
 }
 
-void CodingRateMessage::copy(const CodingRateMessage& other)
+void CodingRatePacket::copy(const CodingRatePacket& other)
 {
-    this->terminalId = other.terminalId;
     this->codingRate = other.codingRate;
 }
 
-void CodingRateMessage::parsimPack(omnetpp::cCommBuffer *b) const
+void CodingRatePacket::parsimPack(omnetpp::cCommBuffer *b) const
 {
-    ::omnetpp::cMessage::parsimPack(b);
-    doParsimPacking(b,this->terminalId);
+    ::Packet::parsimPack(b);
     doParsimPacking(b,this->codingRate);
 }
 
-void CodingRateMessage::parsimUnpack(omnetpp::cCommBuffer *b)
+void CodingRatePacket::parsimUnpack(omnetpp::cCommBuffer *b)
 {
-    ::omnetpp::cMessage::parsimUnpack(b);
-    doParsimUnpacking(b,this->terminalId);
+    ::Packet::parsimUnpack(b);
     doParsimUnpacking(b,this->codingRate);
 }
 
-int CodingRateMessage::getTerminalId() const
-{
-    return this->terminalId;
-}
-
-void CodingRateMessage::setTerminalId(int terminalId)
-{
-    this->terminalId = terminalId;
-}
-
-CODING_RATE CodingRateMessage::getCodingRate() const
+CODING_RATE CodingRatePacket::getCodingRate() const
 {
     return this->codingRate;
 }
 
-void CodingRateMessage::setCodingRate(CODING_RATE codingRate)
+void CodingRatePacket::setCodingRate(CODING_RATE codingRate)
 {
     this->codingRate = codingRate;
 }
 
-class CodingRateMessageDescriptor : public omnetpp::cClassDescriptor
+class CodingRatePacketDescriptor : public omnetpp::cClassDescriptor
 {
   private:
     mutable const char **propertyNames;
     enum FieldConstants {
-        FIELD_terminalId,
         FIELD_codingRate,
     };
   public:
-    CodingRateMessageDescriptor();
-    virtual ~CodingRateMessageDescriptor();
+    CodingRatePacketDescriptor();
+    virtual ~CodingRatePacketDescriptor();
 
     virtual bool doesSupport(omnetpp::cObject *obj) const override;
     virtual const char **getPropertyNames() const override;
@@ -251,24 +237,24 @@ class CodingRateMessageDescriptor : public omnetpp::cClassDescriptor
     virtual void setFieldStructValuePointer(omnetpp::any_ptr object, int field, int i, omnetpp::any_ptr ptr) const override;
 };
 
-Register_ClassDescriptor(CodingRateMessageDescriptor)
+Register_ClassDescriptor(CodingRatePacketDescriptor)
 
-CodingRateMessageDescriptor::CodingRateMessageDescriptor() : omnetpp::cClassDescriptor(omnetpp::opp_typename(typeid(CodingRateMessage)), "omnetpp::cMessage")
+CodingRatePacketDescriptor::CodingRatePacketDescriptor() : omnetpp::cClassDescriptor(omnetpp::opp_typename(typeid(CodingRatePacket)), "Packet")
 {
     propertyNames = nullptr;
 }
 
-CodingRateMessageDescriptor::~CodingRateMessageDescriptor()
+CodingRatePacketDescriptor::~CodingRatePacketDescriptor()
 {
     delete[] propertyNames;
 }
 
-bool CodingRateMessageDescriptor::doesSupport(omnetpp::cObject *obj) const
+bool CodingRatePacketDescriptor::doesSupport(omnetpp::cObject *obj) const
 {
-    return dynamic_cast<CodingRateMessage *>(obj)!=nullptr;
+    return dynamic_cast<CodingRatePacket *>(obj)!=nullptr;
 }
 
-const char **CodingRateMessageDescriptor::getPropertyNames() const
+const char **CodingRatePacketDescriptor::getPropertyNames() const
 {
     if (!propertyNames) {
         static const char *names[] = {  nullptr };
@@ -279,19 +265,19 @@ const char **CodingRateMessageDescriptor::getPropertyNames() const
     return propertyNames;
 }
 
-const char *CodingRateMessageDescriptor::getProperty(const char *propertyName) const
+const char *CodingRatePacketDescriptor::getProperty(const char *propertyName) const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
     return base ? base->getProperty(propertyName) : nullptr;
 }
 
-int CodingRateMessageDescriptor::getFieldCount() const
+int CodingRatePacketDescriptor::getFieldCount() const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
-    return base ? 2+base->getFieldCount() : 2;
+    return base ? 1+base->getFieldCount() : 1;
 }
 
-unsigned int CodingRateMessageDescriptor::getFieldTypeFlags(int field) const
+unsigned int CodingRatePacketDescriptor::getFieldTypeFlags(int field) const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
     if (base) {
@@ -300,13 +286,12 @@ unsigned int CodingRateMessageDescriptor::getFieldTypeFlags(int field) const
         field -= base->getFieldCount();
     }
     static unsigned int fieldTypeFlags[] = {
-        FD_ISEDITABLE,    // FIELD_terminalId
         0,    // FIELD_codingRate
     };
-    return (field >= 0 && field < 2) ? fieldTypeFlags[field] : 0;
+    return (field >= 0 && field < 1) ? fieldTypeFlags[field] : 0;
 }
 
-const char *CodingRateMessageDescriptor::getFieldName(int field) const
+const char *CodingRatePacketDescriptor::getFieldName(int field) const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
     if (base) {
@@ -315,22 +300,20 @@ const char *CodingRateMessageDescriptor::getFieldName(int field) const
         field -= base->getFieldCount();
     }
     static const char *fieldNames[] = {
-        "terminalId",
         "codingRate",
     };
-    return (field >= 0 && field < 2) ? fieldNames[field] : nullptr;
+    return (field >= 0 && field < 1) ? fieldNames[field] : nullptr;
 }
 
-int CodingRateMessageDescriptor::findField(const char *fieldName) const
+int CodingRatePacketDescriptor::findField(const char *fieldName) const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
     int baseIndex = base ? base->getFieldCount() : 0;
-    if (strcmp(fieldName, "terminalId") == 0) return baseIndex + 0;
-    if (strcmp(fieldName, "codingRate") == 0) return baseIndex + 1;
+    if (strcmp(fieldName, "codingRate") == 0) return baseIndex + 0;
     return base ? base->findField(fieldName) : -1;
 }
 
-const char *CodingRateMessageDescriptor::getFieldTypeString(int field) const
+const char *CodingRatePacketDescriptor::getFieldTypeString(int field) const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
     if (base) {
@@ -339,13 +322,12 @@ const char *CodingRateMessageDescriptor::getFieldTypeString(int field) const
         field -= base->getFieldCount();
     }
     static const char *fieldTypeStrings[] = {
-        "int",    // FIELD_terminalId
         "CODING_RATE",    // FIELD_codingRate
     };
-    return (field >= 0 && field < 2) ? fieldTypeStrings[field] : nullptr;
+    return (field >= 0 && field < 1) ? fieldTypeStrings[field] : nullptr;
 }
 
-const char **CodingRateMessageDescriptor::getFieldPropertyNames(int field) const
+const char **CodingRatePacketDescriptor::getFieldPropertyNames(int field) const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
     if (base) {
@@ -362,7 +344,7 @@ const char **CodingRateMessageDescriptor::getFieldPropertyNames(int field) const
     }
 }
 
-const char *CodingRateMessageDescriptor::getFieldProperty(int field, const char *propertyName) const
+const char *CodingRatePacketDescriptor::getFieldProperty(int field, const char *propertyName) const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
     if (base) {
@@ -378,7 +360,7 @@ const char *CodingRateMessageDescriptor::getFieldProperty(int field, const char 
     }
 }
 
-int CodingRateMessageDescriptor::getFieldArraySize(omnetpp::any_ptr object, int field) const
+int CodingRatePacketDescriptor::getFieldArraySize(omnetpp::any_ptr object, int field) const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
     if (base) {
@@ -386,13 +368,13 @@ int CodingRateMessageDescriptor::getFieldArraySize(omnetpp::any_ptr object, int 
             return base->getFieldArraySize(object, field);
         field -= base->getFieldCount();
     }
-    CodingRateMessage *pp = omnetpp::fromAnyPtr<CodingRateMessage>(object); (void)pp;
+    CodingRatePacket *pp = omnetpp::fromAnyPtr<CodingRatePacket>(object); (void)pp;
     switch (field) {
         default: return 0;
     }
 }
 
-void CodingRateMessageDescriptor::setFieldArraySize(omnetpp::any_ptr object, int field, int size) const
+void CodingRatePacketDescriptor::setFieldArraySize(omnetpp::any_ptr object, int field, int size) const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
     if (base) {
@@ -402,13 +384,13 @@ void CodingRateMessageDescriptor::setFieldArraySize(omnetpp::any_ptr object, int
         }
         field -= base->getFieldCount();
     }
-    CodingRateMessage *pp = omnetpp::fromAnyPtr<CodingRateMessage>(object); (void)pp;
+    CodingRatePacket *pp = omnetpp::fromAnyPtr<CodingRatePacket>(object); (void)pp;
     switch (field) {
-        default: throw omnetpp::cRuntimeError("Cannot set array size of field %d of class 'CodingRateMessage'", field);
+        default: throw omnetpp::cRuntimeError("Cannot set array size of field %d of class 'CodingRatePacket'", field);
     }
 }
 
-const char *CodingRateMessageDescriptor::getFieldDynamicTypeString(omnetpp::any_ptr object, int field, int i) const
+const char *CodingRatePacketDescriptor::getFieldDynamicTypeString(omnetpp::any_ptr object, int field, int i) const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
     if (base) {
@@ -416,13 +398,13 @@ const char *CodingRateMessageDescriptor::getFieldDynamicTypeString(omnetpp::any_
             return base->getFieldDynamicTypeString(object,field,i);
         field -= base->getFieldCount();
     }
-    CodingRateMessage *pp = omnetpp::fromAnyPtr<CodingRateMessage>(object); (void)pp;
+    CodingRatePacket *pp = omnetpp::fromAnyPtr<CodingRatePacket>(object); (void)pp;
     switch (field) {
         default: return nullptr;
     }
 }
 
-std::string CodingRateMessageDescriptor::getFieldValueAsString(omnetpp::any_ptr object, int field, int i) const
+std::string CodingRatePacketDescriptor::getFieldValueAsString(omnetpp::any_ptr object, int field, int i) const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
     if (base) {
@@ -430,15 +412,14 @@ std::string CodingRateMessageDescriptor::getFieldValueAsString(omnetpp::any_ptr 
             return base->getFieldValueAsString(object,field,i);
         field -= base->getFieldCount();
     }
-    CodingRateMessage *pp = omnetpp::fromAnyPtr<CodingRateMessage>(object); (void)pp;
+    CodingRatePacket *pp = omnetpp::fromAnyPtr<CodingRatePacket>(object); (void)pp;
     switch (field) {
-        case FIELD_terminalId: return long2string(pp->getTerminalId());
         case FIELD_codingRate: return enum2string(pp->getCodingRate(), "CODING_RATE");
         default: return "";
     }
 }
 
-void CodingRateMessageDescriptor::setFieldValueAsString(omnetpp::any_ptr object, int field, int i, const char *value) const
+void CodingRatePacketDescriptor::setFieldValueAsString(omnetpp::any_ptr object, int field, int i, const char *value) const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
     if (base) {
@@ -448,14 +429,13 @@ void CodingRateMessageDescriptor::setFieldValueAsString(omnetpp::any_ptr object,
         }
         field -= base->getFieldCount();
     }
-    CodingRateMessage *pp = omnetpp::fromAnyPtr<CodingRateMessage>(object); (void)pp;
+    CodingRatePacket *pp = omnetpp::fromAnyPtr<CodingRatePacket>(object); (void)pp;
     switch (field) {
-        case FIELD_terminalId: pp->setTerminalId(string2long(value)); break;
-        default: throw omnetpp::cRuntimeError("Cannot set field %d of class 'CodingRateMessage'", field);
+        default: throw omnetpp::cRuntimeError("Cannot set field %d of class 'CodingRatePacket'", field);
     }
 }
 
-omnetpp::cValue CodingRateMessageDescriptor::getFieldValue(omnetpp::any_ptr object, int field, int i) const
+omnetpp::cValue CodingRatePacketDescriptor::getFieldValue(omnetpp::any_ptr object, int field, int i) const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
     if (base) {
@@ -463,15 +443,14 @@ omnetpp::cValue CodingRateMessageDescriptor::getFieldValue(omnetpp::any_ptr obje
             return base->getFieldValue(object,field,i);
         field -= base->getFieldCount();
     }
-    CodingRateMessage *pp = omnetpp::fromAnyPtr<CodingRateMessage>(object); (void)pp;
+    CodingRatePacket *pp = omnetpp::fromAnyPtr<CodingRatePacket>(object); (void)pp;
     switch (field) {
-        case FIELD_terminalId: return pp->getTerminalId();
         case FIELD_codingRate: return static_cast<int>(pp->getCodingRate());
-        default: throw omnetpp::cRuntimeError("Cannot return field %d of class 'CodingRateMessage' as cValue -- field index out of range?", field);
+        default: throw omnetpp::cRuntimeError("Cannot return field %d of class 'CodingRatePacket' as cValue -- field index out of range?", field);
     }
 }
 
-void CodingRateMessageDescriptor::setFieldValue(omnetpp::any_ptr object, int field, int i, const omnetpp::cValue& value) const
+void CodingRatePacketDescriptor::setFieldValue(omnetpp::any_ptr object, int field, int i, const omnetpp::cValue& value) const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
     if (base) {
@@ -481,14 +460,13 @@ void CodingRateMessageDescriptor::setFieldValue(omnetpp::any_ptr object, int fie
         }
         field -= base->getFieldCount();
     }
-    CodingRateMessage *pp = omnetpp::fromAnyPtr<CodingRateMessage>(object); (void)pp;
+    CodingRatePacket *pp = omnetpp::fromAnyPtr<CodingRatePacket>(object); (void)pp;
     switch (field) {
-        case FIELD_terminalId: pp->setTerminalId(omnetpp::checked_int_cast<int>(value.intValue())); break;
-        default: throw omnetpp::cRuntimeError("Cannot set field %d of class 'CodingRateMessage'", field);
+        default: throw omnetpp::cRuntimeError("Cannot set field %d of class 'CodingRatePacket'", field);
     }
 }
 
-const char *CodingRateMessageDescriptor::getFieldStructName(int field) const
+const char *CodingRatePacketDescriptor::getFieldStructName(int field) const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
     if (base) {
@@ -501,7 +479,7 @@ const char *CodingRateMessageDescriptor::getFieldStructName(int field) const
     };
 }
 
-omnetpp::any_ptr CodingRateMessageDescriptor::getFieldStructValuePointer(omnetpp::any_ptr object, int field, int i) const
+omnetpp::any_ptr CodingRatePacketDescriptor::getFieldStructValuePointer(omnetpp::any_ptr object, int field, int i) const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
     if (base) {
@@ -509,13 +487,13 @@ omnetpp::any_ptr CodingRateMessageDescriptor::getFieldStructValuePointer(omnetpp
             return base->getFieldStructValuePointer(object, field, i);
         field -= base->getFieldCount();
     }
-    CodingRateMessage *pp = omnetpp::fromAnyPtr<CodingRateMessage>(object); (void)pp;
+    CodingRatePacket *pp = omnetpp::fromAnyPtr<CodingRatePacket>(object); (void)pp;
     switch (field) {
         default: return omnetpp::any_ptr(nullptr);
     }
 }
 
-void CodingRateMessageDescriptor::setFieldStructValuePointer(omnetpp::any_ptr object, int field, int i, omnetpp::any_ptr ptr) const
+void CodingRatePacketDescriptor::setFieldStructValuePointer(omnetpp::any_ptr object, int field, int i, omnetpp::any_ptr ptr) const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
     if (base) {
@@ -525,9 +503,9 @@ void CodingRateMessageDescriptor::setFieldStructValuePointer(omnetpp::any_ptr ob
         }
         field -= base->getFieldCount();
     }
-    CodingRateMessage *pp = omnetpp::fromAnyPtr<CodingRateMessage>(object); (void)pp;
+    CodingRatePacket *pp = omnetpp::fromAnyPtr<CodingRatePacket>(object); (void)pp;
     switch (field) {
-        default: throw omnetpp::cRuntimeError("Cannot set field %d of class 'CodingRateMessage'", field);
+        default: throw omnetpp::cRuntimeError("Cannot set field %d of class 'CodingRatePacket'", field);
     }
 }
 
