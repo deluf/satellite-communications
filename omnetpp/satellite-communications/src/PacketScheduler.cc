@@ -1,6 +1,4 @@
 
-#include <algorithm>
-
 #include "PacketScheduler.h"
 
 Define_Module(PacketScheduler);
@@ -8,37 +6,45 @@ Define_Module(PacketScheduler);
 
 void PacketScheduler::initialize()
 {
-    throughputSignal = registerSignal("throughput");
-
     cModule *satCom = getParentModule()->getParentModule();
 
     cModule *oracleModule = satCom->getSubmodule("oracle");
     oracle = check_and_cast<Oracle*>(oracleModule);
 
     satellite = satCom->getSubmodule("satellite");
-    numTerminals = satCom->par("N").intValue();
+    terminalCount = satCom->par("terminalCount").intValue();
+    communicationSlotDuration =
+                SimTime(satCom->par("communicationSlotDuration").doubleValue());
     blocksPerFrame = par("blocksPerFrame").intValue();
+
     /*
-     * The status of each terminal (id, current coding rate and queue) is stored in a
-     *  vector of terminalStatus structs indexed by the id field (i.e. terminals[i].id = i).
-     * This allows to update the coding rate of any terminal in O(1) whenever a new codingRateMessage arrives.
+     * All the informations about each terminal { id, codingRate, packetQueue } are stored in a
+     *  vector of terminalDescriptor structs indexed by the id field (i.e. terminals[i].id = i).
+     *
+     * This property allows to update the coding rate of any terminal
+     *  in O(1) whenever a new codingRatePacket arrives.
      *
      * In order to serve the terminals according to a maximum-coding-rate policy without losing the
-     *  indexing property described before, a vector of pointers to those terminalStatus structs is used.
-     * This way, we don't actually sort the terminalStatus structs, but the pointers to them.
+     *  indexing property described before, a vector of pointers to terminalDescriptors is used.
+     * This way, we don't actually sort the terminalDescriptors structs, but the pointers to them.
      */
 
-    terminals.resize(numTerminals);
-    sortedTerminals.resize(numTerminals);
+    terminals.resize(terminalCount);
+    sortedTerminals.resize(terminalCount);
 
-    for (int i = 0; i < numTerminals; i++)
+    for (int i = 0; i < terminalCount; i++)
     {
         terminals[i].id = i;
         sortedTerminals[i] = &terminals[i];
     }
 
-    receivedCodingRates = 0;
-    debugTotalBitsSent = 0;
+    throughputSignal = registerSignal("throughput");
+    receivedCodingRateCount = 0;
+
+#ifdef DEBUG_SCHEDULER
+    totalBitsSent = 0;
+#endif
+
 }
 
 void PacketScheduler::handleMessage(cMessage *msg)
@@ -46,101 +52,134 @@ void PacketScheduler::handleMessage(cMessage *msg)
     if (msg->isName("packet"))
     {
         Packet *packet = check_and_cast<Packet*>(msg);
-
-        int terminalId = packet->getTerminalId();
-        int byteLength = packet->getByteLength();
-
-        terminals[terminalId].queue.insert(packet);
-
-        EV_DEBUG << "[packetScheduler]> terminal " << terminalId << " received a new packet of size " << byteLength << endl;
+        handlePacket(packet);
     }
-
-    /* Message received from the satellite */
-    else
+    else if (msg->isName("codingRatePacket"))
     {
         CodingRatePacket *codingRatePacket = check_and_cast<CodingRatePacket*>(msg);
-
-        int terminalId = codingRatePacket->getTerminalId();
-        CODING_RATE codingRate = codingRatePacket->getCodingRate();
-
-        terminals[terminalId].codingRate = codingRate;
-        receivedCodingRates++;
-
-        EV_DEBUG << "[packetScheduler]> Acknowledged coding rate " << codingRateToString[codingRate]
-                 << " for terminal "<< terminalId << ", "
-                 << numTerminals - receivedCodingRates << " remaining" << endl;
-
-        /* All of the coding rates have been received */
-        if (receivedCodingRates == numTerminals)
-        {
-            receivedCodingRates = 0;
-
-            std::sort(
-                sortedTerminals.begin(), sortedTerminals.end(),
-                [](const TerminalStatus *a, const TerminalStatus *b)
-                { return a->codingRate > b->codingRate; }
-            );
-
-            EV_DEBUG << "[packetScheduler]> Sorted terminals:" << endl;
-            for (TerminalStatus* &terminal: sortedTerminals)
-            {
-                EV_DEBUG << "[packetScheduler]> ID: " << terminal->id << ", CR: "
-                        << codingRateToString[terminal->codingRate]
-                        << ", Queue length: " << terminal->queue.getLength() << endl;
-            }
-
-            EV_DEBUG << "[packetScheduler]> Building the frame..." << endl;
-
-            Frame *frame = buildFrame();
-
-            long bitLength = frame->getBitLength();
-            debugTotalBitsSent += bitLength;
-
-            /*
-             * The throughput statistic uses sumPerDuration(throughputSignal) as a source, and records the last value.
-             * The sumPerDuration filter does the following:
-             *  For each value, computes the sum of values received so far, divides it by the duration, and outputs the result.
-             * By default, the duration is equal to the current simulation time,
-             *  since the first emission happens at simulation time 0, the throughput would be infinite
-             *  and since, in the reals system, the frame actually arrives to the terminals in at most 80ms,
-             * then we manually fix the emission to happen 80ms after the current simulation time.
-             */
-            cTimestampedValue tmp(simTime() + SimTime(80, SIMTIME_MS), (intval_t)bitLength);
-            emit(throughputSignal, &tmp);
-
-            if (bitLength > 0)
-            {
-                sendDirect(frame, satellite, "in");
-            }
-            else
-            {
-                delete frame;
-            }
-
-            EV_DEBUG << "[packetScheduler]> Frame of size " << bitLength << " bits sent!" << endl;
-        }
-
-        delete codingRatePacket;
+        handleCodingRatePacket(codingRatePacket);
+    }
+    else
+    {
+        throw cRuntimeError(this, "The packetScheduler can't handle the received "
+                "message. Supported types are: \"codingRatePacket\", \"packet\"");
     }
 }
 
-int PacketScheduler::getBlockSizeForCodingRate(CODING_RATE codingRate)
+void PacketScheduler::handlePacket(Packet *packet)
+{
+    /* When a packet arrives from a packetGenerator, it is inserted into the appropriate packetQueue */
+
+    int terminalId = packet->getTerminalId();
+    terminals[terminalId].packetQueue.insert(packet);
+
+    EV_INFO << "[packetScheduler]> Added packet with id " << packet->getTreeId()
+            << " to the queue of terminal " << terminalId << ". The queue now contains "
+            << terminals[terminalId].packetQueue.getLength() << " packets" << endl;
+}
+
+void PacketScheduler::handleCodingRatePacket(CodingRatePacket *codingRatePacket)
+{
+    int terminalId = codingRatePacket->getTerminalId();
+    CODING_RATE codingRate = codingRatePacket->getCodingRate();
+
+    terminals[terminalId].codingRate = codingRate;
+    receivedCodingRateCount++;
+
+    EV_INFO << "[packetScheduler]> Received coding rate " << codingRateToString[codingRate]
+             << " for terminal "<< terminalId << ", "
+             << terminalCount - receivedCodingRateCount << " remaining" << endl;
+
+    /* The scheduling process can begin when all of the coding rates have been received */
+    if (receivedCodingRateCount == terminalCount)
+    {
+        receivedCodingRateCount = 0;
+        schedulePackets();
+    }
+
+    delete codingRatePacket;
+}
+
+void PacketScheduler::schedulePackets()
+{
+    std::sort(
+        sortedTerminals.begin(), sortedTerminals.end(),
+        [](const TerminalDescriptor *a, const TerminalDescriptor *b)
+        {
+            return a->codingRate > b->codingRate;
+        }
+    );
+
+#ifdef DEBUG_SCHEDULER
+    EV_DEBUG << "[packetScheduler]> Sorted terminals:" << endl;
+    for (TerminalDescriptor* &terminal: sortedTerminals)
+    {
+        EV_DEBUG << "[packetScheduler]> ID: " << terminal->id << ", CR: "
+                << codingRateToString[terminal->codingRate]
+                << ", Queue length: " << terminal->packetQueue.getLength() << endl;
+    }
+#endif
+
+    Frame *frame = buildFrame();
+
+#ifdef DEBUG_SCHEDULER
+    totalBitsSent += frame->getBitLength();
+#endif
+
+    /*
+     * The throughput statistic uses sumPerDuration(throughputSignal) as a source, and records its last value.
+     *
+     * The sumPerDuration filter does the following:
+     *  1. Adds the emitted value to to the sum of all the values emitted until then
+     *  2. Divides that number by the "duration" of the filter
+     *  3. Outputs the result of the last operation
+     * By default, the "duration" of the filter is equal to the current simulation time.
+     *
+     * This means that since the first emission happens at simulation time 0, without
+     *  particular precautions, the first recorded throughput would be infinite.
+     *
+     * Since, in the reals system, the frame actually arrives to the terminals within a communication slot,
+     *  then it is fair to emit the throughputSignal a communication slot after the current simulation time.
+     */
+    cTimestampedValue scheduledEmit(simTime() + communicationSlotDuration, frame->getBitLength());
+    emit(throughputSignal, &scheduledEmit);
+
+    sendDirect(frame, satellite, "in");
+
+    EV_INFO << "[packetScheduler]> Sent a frame of size " << frame->getByteLength() << " bytes" << endl;
+}
+
+const int PacketScheduler::getBlockSizeForCodingRate(CODING_RATE codingRate) const
 {
     int blockSize;
-    switch (codingRate) {
-        case L3: blockSize = 904; break;
-        case L2: blockSize = 1356; break;
-        case L1: blockSize = 1808; break;
-        case R:  blockSize = 2260; break;
-        case H1: blockSize = 2712; break;
-        case H2: blockSize = 3164; break;
-        case H3: blockSize = 3616; break;
-        default: throw cRuntimeError("Unknown coding rate");
+    switch (codingRate)
+    {
+        case L3:
+            blockSize = 904;
+            break;
+        case L2:
+            blockSize = 1356;
+            break;
+        case L1:
+            blockSize = 1808;
+            break;
+        case R:
+            blockSize = 2260;
+            break;
+        case H1:
+            blockSize = 2712;
+            break;
+        case H2:
+            blockSize = 3164;
+            break;
+        case H3:
+            blockSize = 3616;
+            break;
+        default:
+            throw cRuntimeError("Unknown coding rate");
     }
-
     return blockSize / blocksPerFrame;
 }
-
 
 void PacketScheduler::initBlock(Block* block, CODING_RATE codingRate)
 {
@@ -151,18 +190,23 @@ void PacketScheduler::initBlock(Block* block, CODING_RATE codingRate)
 Frame *PacketScheduler::buildFrame()
 {
     Frame *frame = new Frame("frame");
-    frame->setByteLength(0);
 
+    frame->setByteLength(0);
     frame->setBlocksArraySize(blocksPerFrame);
+
     for (int i = 0; i < blocksPerFrame; i++)
     {
         frame->getBlocksForUpdate(i).setUsedSize(0);
     }
 
     int currentBlockIndex = 0;
-    for (TerminalStatus *terminal : sortedTerminals)
+
+    /* Serve each terminal according to a maximum-coding-rate policy */
+    for (TerminalDescriptor *terminal : sortedTerminals)
     {
-        while (!terminal->queue.isEmpty() && currentBlockIndex < blocksPerFrame)
+
+        /* While there are still packets in queue and there are still free blocks... */
+        while (!terminal->packetQueue.isEmpty() && currentBlockIndex < blocksPerFrame)
         {
             Block* block = &frame->getBlocksForUpdate(currentBlockIndex);
 
@@ -172,19 +216,28 @@ Frame *PacketScheduler::buildFrame()
                 initBlock(block, terminal->codingRate);
             }
 
-            /* Block's CR must be <= Terminal's CR */
-            if (block->getCodingRate() > terminal->codingRate) {
+            /*
+             * A terminal with coding rate T can only be scheduled in blocks with coding rate B <= T.
+             * i.e., a terminal with coding rate H3 can be scheduled anywhere,
+             *  while a terminal with coding rate R can only be scheduled in R, L1, L2, L3 blocks
+             */
+            if (terminal->codingRate < block->getCodingRate()) {
+#ifdef DEBUG_SCHEDULER
                 EV_DEBUG << "[packetScheduler]> Block coding rate (" << block->getCodingRate()
                          << ") too high (Terminal's CR: " << terminal->codingRate
                          << "), moving to next block" << endl;
+#endif
                 currentBlockIndex++;
                 continue;
             }
 
-            Packet *packet = check_and_cast<Packet*>(terminal->queue.front());
+            Packet *packet = check_and_cast<Packet*>(terminal->packetQueue.front());
             int remainingSize = packet->getByteLength();
+
+#ifdef DEBUG_SCHEDULER
             EV_DEBUG << "[packetScheduler]> Scheduling packet for terminal: " << packet->getTerminalId()
                      << " with size: " << packet->getByteLength() << " bytes" << endl;
+#endif
 
             /* checking if the packet can be scheduled at all */
             int blocksLeft = blocksPerFrame - currentBlockIndex - 1;
@@ -194,10 +247,12 @@ Frame *PacketScheduler::buildFrame()
             if (remainingSize > totalAvailableSpace)
             {
                 /* If the packet can't be scheduled in the frame due to its size, we move to the next terminal */
+#ifdef DEBUG_SCHEDULER
                 EV_DEBUG << "[packetScheduler]> Packet (" << packet->getByteLength()
                          << " bytes) too large to fit in frame ("
                          << totalAvailableSpace
                          << " bytes left), moving to next terminal" << endl;
+#endif
                 break;
             }
 
@@ -210,7 +265,7 @@ Frame *PacketScheduler::buildFrame()
                     block->appendPackets(packet);
                     frame->addByteLength(remainingSize);
                     remainingSize = 0;
-                    terminal->queue.pop();
+                    terminal->packetQueue.pop();
                     oracle->registerPacket(terminal->id, currentBlockIndex, block->getPacketsArraySize() - 1);
                     drop(packet);
                 }
@@ -230,33 +285,38 @@ Frame *PacketScheduler::buildFrame()
                     packet->setByteLength(remainingSize);
 
                     /* Packet will be scheduled in the next block, must be initialized */
+#ifdef DEBUG_SCHEDULER
                     EV_DEBUG << "[packetScheduler]> Block " << currentBlockIndex
                              << " has been filled" << endl;
+#endif
+
                     block = &frame->getBlocksForUpdate(++currentBlockIndex);
                     initBlock(block, terminal->codingRate);
                 }
             }
         }
 
-        if (currentBlockIndex == blocksPerFrame) break;
     }
 
-    EV_DEBUG << "[packetScheduler]> Finished building frame with size: "
-            << frame->getByteLength() << " bytes" << endl;
     return frame;
 }
 
-
 void PacketScheduler::finish()
 {
-    // TODO: boh a sto punto fare anche delete dei vari timer
-    for (TerminalStatus& terminalStatus : terminals)
+    /*
+     * Deallocate all the packets still in the queues.
+     * Not really necessary but avoids the annoying "undisposed object" messages.
+     */
+    for (TerminalDescriptor& terminal : terminals)
     {
-        terminalStatus.queue.clear();
+        terminal.packetQueue.clear();
     }
 
-    EV_DEBUG << "### Simulation finished ###" << endl
-            << "\tTotal number of bits sent: " << debugTotalBitsSent << endl
-            << "\tSimulation time: " << simTime() << " s" << endl
-            << "\tExpected throughput: " << ((double)debugTotalBitsSent)/(simTime().dbl()) << " bps" << endl;
+#ifdef DEBUG_SCHEDULER
+    /* Print the expected throughput */
+    EV_DEBUG << "[packetScheduler]> " << endl
+            << "\tTotal bits sent: " << totalBitsSent << endl
+            << "\tSimulation time: " << simTime().dbl() << " s" << endl
+            << "\tExpected throughput: " << (double)totalBitsSent / simTime().dbl() << " bps" << endl;
+#endif
 }

@@ -2,7 +2,10 @@
 #ifndef PACKETGENERATOR_H_
 #define PACKETGENERATOR_H_
 
+#include <iomanip>
+
 #include "omnetpp.h"
+#include "Packet_m.h"
 
 using namespace omnetpp;
 

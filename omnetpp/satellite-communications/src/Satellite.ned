@@ -4,8 +4,8 @@ package satellite_communications;
 simple Satellite
 {
     parameters:
-        @display("i=device/satellite");
+		@display("i=device/satellite");
         
     gates:
-        input in @directIn;
+		input in @directIn;
 }

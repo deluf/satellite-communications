@@ -3,19 +3,20 @@
 #define PACKETSCHEDULER_H_
 
 #include <vector>
+#include <algorithm>
 
 #include "omnetpp.h"
 #include "Oracle.h"
-#include "Frame_m.h"
 #include "CodingRatePacket_m.h"
+#include "Frame_m.h"
 
 using namespace omnetpp;
 
-struct TerminalStatus
+struct TerminalDescriptor
 {
     int id;
     CODING_RATE codingRate;
-    cQueue queue;
+    cQueue packetQueue;
 };
 
 class PacketScheduler : public cSimpleModule
@@ -23,16 +24,24 @@ class PacketScheduler : public cSimpleModule
     Oracle *oracle;
     cModule *satellite;
     simsignal_t throughputSignal;
-    std::vector<TerminalStatus> terminals;
-    std::vector<TerminalStatus*> sortedTerminals;
-    int numTerminals;
-    int receivedCodingRates;
-    long debugTotalBitsSent;    // TODO: Just for debugging
+    simtime_t communicationSlotDuration;
+    std::vector<TerminalDescriptor> terminals;
+    std::vector<TerminalDescriptor*> sortedTerminals;
+    int terminalCount;
+    int receivedCodingRateCount;
     int blocksPerFrame;
 
+#ifdef DEBUG_SCHEDULER
+    long totalBitsSent;
+#endif
+
+    void handlePacket(Packet *packet);
+    void handleCodingRatePacket(CodingRatePacket *codingRatePacket);
+    void schedulePackets();
+
     Frame *buildFrame();
-    int getBlockSizeForCodingRate(CODING_RATE codingRate);
     void initBlock(Block* block, CODING_RATE codingRate);
+    const int getBlockSizeForCodingRate(CODING_RATE codingRate) const;
 
 protected:
     virtual void initialize() override;

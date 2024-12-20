@@ -27,6 +27,7 @@ class Oracle : public cSimpleModule
 
 protected:
     virtual void initialize() override;
+
 public:
     void registerPacket(int terminalId, int blockIndex, int packetIndex, bool isLastSegment = true);
     std::list<PacketLocation>& getPacketLocations(int terminalId);

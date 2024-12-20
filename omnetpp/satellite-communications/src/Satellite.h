@@ -10,10 +10,6 @@ using namespace omnetpp;
 
 class Satellite : public cSimpleModule
 {
-    /*
-     * Keeping a pointer to the ground station and to all the terminals,
-     *  so that it doesn't have to fetch them each time a message arrives.
-     */
     cModule *groundStation;
     std::vector<cModule*> terminals;
 

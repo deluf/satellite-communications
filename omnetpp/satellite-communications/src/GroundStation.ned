@@ -7,15 +7,15 @@ module GroundStation
         @display("i=device/receiverdish");
 
     gates:
-        input in @directIn;
+		input in @directIn;
         
     submodules:
-        packetGenerator[parent.N]: PacketGenerator;
+        packetGenerator[parent.terminalCount]: PacketGenerator;
         packetScheduler: PacketScheduler;
         
     connections:
-        in --> packetScheduler.in;
-        for i = 0 .. parent.N-1 
+        in --> packetScheduler.groundStationIn;
+        for i = 0 .. parent.terminalCount - 1 
         {
 	        packetGenerator[i].out --> packetScheduler.generatorsIn++;
         }

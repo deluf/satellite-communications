@@ -9,14 +9,15 @@ import satellite_communications.Oracle;
 network SatCom
 {
     parameters:
-        int N = default(3);
+        int terminalCount = default(3);
+        double communicationSlotDuration @unit(s) = default(80 ms);
         
     submodules:
         groundStation: GroundStation 
         {
             @display("p=89,175");
         }
-        terminal[N]: Terminal 
+        terminal[terminalCount]: Terminal 
         {
             @display("p=347,175");
         }

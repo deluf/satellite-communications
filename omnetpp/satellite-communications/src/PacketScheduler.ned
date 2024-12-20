@@ -17,5 +17,5 @@ simple PacketScheduler
         
     gates:
         input generatorsIn[];
-        input in;
+        input groundStationIn;
 }

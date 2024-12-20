@@ -6,8 +6,14 @@ Define_Module(Satellite);
 
 void Satellite::initialize()
 {
+    /*
+     * Keeping a pointer to the ground station and to all the terminals allows
+     *  the satellite to avoid fetching them each time a message arrives.
+     */
+
     cModule *satCom = getParentModule();
-    terminals.resize(satCom->par("N").intValue());
+    int terminalCount = satCom->par("terminalCount").intValue();
+    terminals.resize(terminalCount);
     int i = 0;
     for (cModule* &terminal : terminals)
     {
@@ -18,30 +24,33 @@ void Satellite::initialize()
 
 void Satellite::handleMessage(cMessage *msg)
 {
-    if (msg->isName("codingRate"))
+    if (msg->isName("codingRatePacket"))
     {
-        EV_DEBUG << "[satellite]> Received a message from terminal " << msg->getSenderModule()->getIndex()
+        /* When a codingRate message is received, it must be forwarded to the ground station */
+
+        EV_INFO << "[satellite]> Received a message from terminal " << msg->getSenderModule()->getIndex()
                 << ", forwarding it to the ground station" << endl;
 
         sendDirect(msg, groundStation, "in");
     }
     else if (msg->isName("frame"))
     {
-        EV_DEBUG << "[satellite]> Received a message from the ground station, forwarding it to all the terminals" << endl;
+        /* When a frame message is received, it must be forwarded to every and each terminal */
 
-        for (cModule* &terminal : terminals)
+        EV_INFO << "[satellite]> Received a message from the ground station, forwarding it to all the terminals" << endl;
+
+        for (cModule* terminal : terminals)
         {
-            /* Duplicating the message because we can't send the same message object to multiple terminals */
+            /* Duplication is needed because the same cMessage object can't be sent to multiple terminals */
             sendDirect(msg->dup(), terminal, "in");
         }
 
-        /* Since we are duplicating it, the original message can be deleted */
+        /* Since it has been duplicated, the original message can be deleted */
         delete msg;
     }
     else
     {
         throw cRuntimeError(this, "The satellite can't handle the received "
-                "message. Supported types are: \"codingRate\", \"frame\"");
+                "message. Supported types are: \"codingRatePacket\", \"frame\"");
     }
-
 }

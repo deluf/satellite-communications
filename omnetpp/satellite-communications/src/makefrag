@@ -1,9 +1,16 @@
 
-# Flags:
-# 	- DEBUG_RNG :
-# 	- DEBUG_SCHEDULER :
-# 	- DEBUG_TERMINALS :
-# fare clean e poi make di nuovo
+# This file is automatically included by OMNeT++'s Makefile.
+#  (https://doc.omnetpp.org/omnetpp/manual/#sec:makefrag)
+#
+# We use it to define custom compiler flags, mainly for debugging purposes.
+# Remember to run "make clean" before recompiling the project with the uncommented flags.
+#
 
+# .... =>  
+#CFLAGS += -DEBUG_RNGS
 
-#CFLAGS += -DRNG_DEBUG
+# .... => throughput, 
+#CFLAGS += -DEBUG_SCHEDULER
+
+# .... => oracle registration + terminal fetch
+#CFLAGS += -DEBUG_TERMINALS
