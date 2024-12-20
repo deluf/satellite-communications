@@ -34,11 +34,17 @@
 # DS_Store files
 .DS_Store
 
-# OMNeT++ files
-omnetpp/satellite-communications/src/satellite-communications_dbg
-omnetpp/satellite-communications/.settings/language.settings.xml
+# OMNeT++
+
+## Folders
 /omnetpp/satellite-communications/out
 /omnetpp/satellite-communications/simulations/results
+## Files
+omnetpp/satellite-communications/simulations/.qtenvrc
+omnetpp/satellite-communications/src/satellite-communications_dbg
+omnetpp/satellite-communications/.settings/language.settings.xml
 omnetpp/satellite-communications/simulations/General.anf
-.qtenvrc
 omnetpp/satellite-communications/src/satellite-communications
+## Auto-generated custom messages cpp implementation
+omnetpp/satellite-communications/src/*_m.h
+omnetpp/satellite-communications/src/*_m.cc
