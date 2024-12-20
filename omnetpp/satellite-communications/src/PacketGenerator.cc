@@ -41,7 +41,7 @@ void PacketGenerator::handleMessage(cMessage *msg)
 
 #ifdef DEBUG_RNGS
     EV_DEBUG << std::fixed << std::setprecision(5) << simTime().dbl() << " - [packetGenerator " << id
-            << "]> Extracted byteLength for terminal " << id) << " | Total RNG calls: " << getRNG(0)->getNumbersDrawn() << endl;
+            << "]> Extracted byteLength for terminal " << id << " | Total RNG calls: " << getRNG(0)->getNumbersDrawn() << endl;
 #endif
 
     EV_INFO << "[packetGenerator " << id << "]> Generated packet { id: "

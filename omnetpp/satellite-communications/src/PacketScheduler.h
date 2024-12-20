@@ -37,11 +37,13 @@ class PacketScheduler : public cSimpleModule
 
     void handlePacket(Packet *packet);
     void handleCodingRatePacket(CodingRatePacket *codingRatePacket);
-    void schedulePackets();
-
+    void maxCRScheduling();
+    const int getMaxBlockBytes(CODING_RATE codingRate) const;
+    void initBlock(Block *block, CODING_RATE codingRate, bool isForNewPacket, int currentBlockIndex);
+    bool canSchedule(TerminalDescriptor *terminal, Block *block, int currentBlockIndex);
+    bool fits(Packet *packet, Frame *frame, int currentBlockIndex);
+    void allocatePacketSegment(Packet *packet, Frame *frame, int &lastPacketBytesLeft, int &currentBlockIndex);
     Frame *buildFrame();
-    void initBlock(Block* block, CODING_RATE codingRate);
-    const int getBlockSizeForCodingRate(CODING_RATE codingRate) const;
 
 protected:
     virtual void initialize() override;

@@ -74,20 +74,27 @@ void Terminal::handleFrame(Frame *frame)
         EV_INFO << "[terminal " << id << "]> This frame does not carry any packets for me" << endl;
     }
 
+    /*
+     * At the transmitter, packets may be splitted in multiple blocks.
+     *  To get the original size of each packet, we
+     *   need to sum the sizes of all the segments.
+     */
+    int totalPacketSize = 0;
+
     while (!packetLocations.empty())
     {
-        PacketLocation &packetLocation = packetLocations.front();
+        PacketLocation *packetLocation = &packetLocations.front();
 
-        int blockIndex = packetLocation.blockIndex;
-        int packetIndex = packetLocation.packetIndex;
+        int blockIndex = packetLocation->blockIndex;
+        int packetIndex = packetLocation->packetIndex;
 
         Block *block = &frame->getBlocksForUpdate(blockIndex);
         Packet *packet = block->getPacketsForUpdate(packetIndex);
 
 #ifdef DEBUG_TERMINALS
-        EV_DEBUG << "[terminal " << id << "]> Fetched { blockIndex: " << packetLocation.blockIndex
-                << ", packetIndex: " << packetLocation.packetIndex << ", lastPiece: "
-                << packetLocation.isLastSegment << "}" << endl;
+        EV_DEBUG << "[terminal " << id << "]> Fetched { blockIndex: " << packetLocation->blockIndex
+                << ", packetIndex: " << packetLocation->packetIndex << ", lastPiece: "
+                << packetLocation->isLastSegment << "}" << endl;
 #endif
 
         if (packet->getTerminalId() != id)
@@ -95,13 +102,17 @@ void Terminal::handleFrame(Frame *frame)
             throw cRuntimeError(this, "A terminal was allowed to read a packet destined to another terminal");
         }
 
+        totalPacketSize += packet->getByteLength();
+
         /* The delay statistic of a packet can only be emitted when the packet has been fully fetched */
-        if (packetLocation.isLastSegment)
+        if (packetLocation->isLastSegment)
         {
             double delay = (simTime() - packet->getCreationTime()).dbl();
             emit(delaySignal, delay);
             EV_INFO << "[terminal " << id << "]> Received packet { id: " << packet->getTreeId() << ", byteLength: "
-                    << packet->getByteLength() << " } with a delay of " << delay * 1e3 << " ms" << endl;
+                    << totalPacketSize << " } with a delay of " << delay * 1e3 << " ms" << endl;
+
+            totalPacketSize = 0;
         }
 
         /*

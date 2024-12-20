@@ -3,8 +3,8 @@ import CodingRatePacket;
 
 class Block extends cObject
 {
-    int maxSize;
-    int usedSize;
+    int maxBytes;
+    int usedBytes;
  	CODING_RATE codingRate;
     Packet *packets[];
 };

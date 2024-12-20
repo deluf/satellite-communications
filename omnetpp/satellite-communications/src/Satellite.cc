@@ -15,7 +15,7 @@ void Satellite::initialize()
     int terminalCount = satCom->par("terminalCount").intValue();
     terminals.resize(terminalCount);
     int i = 0;
-    for (cModule* &terminal : terminals)
+    for (cModule *&terminal : terminals)
     {
         terminal = satCom->getSubmodule("terminal", i++);
     }
@@ -39,7 +39,7 @@ void Satellite::handleMessage(cMessage *msg)
 
         EV_INFO << "[satellite]> Received a message from the ground station, forwarding it to all the terminals" << endl;
 
-        for (cModule* terminal : terminals)
+        for (cModule *terminal : terminals)
         {
             /* Duplication is needed because the same cMessage object can't be sent to multiple terminals */
             sendDirect(msg->dup(), terminal, "in");

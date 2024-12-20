@@ -6,11 +6,13 @@
 # Remember to run "make clean" before recompiling the project with the uncommented flags.
 #
 
-# .... =>  
-#CFLAGS += -DEBUG_RNGS
+# Detailed debug statements regarding everything that in the simulation is random.
+#CFLAGS += -DDEBUG_RNGS
 
-# .... => throughput, 
-#CFLAGS += -DEBUG_SCHEDULER
+# Detailed debug statements regarding the scheduling process.
+# Also provides an expected throughput once finish() is called. 
+#CFLAGS += -DDEBUG_SCHEDULER
 
-# .... => oracle registration + terminal fetch
-#CFLAGS += -DEBUG_TERMINALS
+# Detailed debug statements regarding the registration of packets segments 
+#  at the oracle and their retrieval by the terminals.
+#CFLAGS += -DDEBUG_TERMINALS
