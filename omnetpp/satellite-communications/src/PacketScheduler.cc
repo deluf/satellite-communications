@@ -139,7 +139,7 @@ void PacketScheduler::maxCRScheduling()
      * This means that since the first emission happens at simulation time 0, without
      *  particular precautions, the first recorded throughput would be infinite.
      *
-     * Since, in the reals system, the frame actually arrives to the terminals within a communication slot,
+     * Since, in the real systems, the frame actually arrives to the terminals within a communication slot,
      *  then it is fair to emit the throughputSignal a communication slot after the current simulation time.
      */
     cTimestampedValue scheduledEmit(simTime() + communicationSlotDuration, frame->getBitLength());
