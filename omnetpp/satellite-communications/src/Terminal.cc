@@ -18,9 +18,13 @@ void Terminal::initialize()
     cModule *oracleModule = satCom->getSubmodule("oracle");
     oracle = check_and_cast<Oracle*>(oracleModule);
 
-    /* A timer tick represents the start of a new communication slot */
+    /*
+     * A timer tick represents the start of a new communication slot.
+     * By default, the timer starts ticking after one communication slot in order
+     *  to let at least a few packets arrive at the queues of the ground station.
+     */
     timer = new cMessage("timer");
-    scheduleAt(simTime(), timer);
+    scheduleAt(simTime() + communicationSlotDuration, timer);
 }
 
 void Terminal::handleMessage(cMessage *msg)

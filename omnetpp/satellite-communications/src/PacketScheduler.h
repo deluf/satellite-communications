@@ -23,17 +23,14 @@ class PacketScheduler : public cSimpleModule
 {
     Oracle *oracle;
     cModule *satellite;
-    simsignal_t throughputSignal;
+    simsignal_t throughputSignal, instantaneousThroughputSignal;
     simtime_t communicationSlotDuration;
     std::vector<TerminalDescriptor> terminals;
     std::vector<TerminalDescriptor*> sortedTerminals;
     int terminalCount;
     int receivedCodingRateCount;
     int blocksPerFrame;
-
-#ifdef DEBUG_SCHEDULER
     long totalBitsSent;
-#endif
 
     void handlePacket(Packet *packet);
     void handleCodingRatePacket(CodingRatePacket *codingRatePacket);

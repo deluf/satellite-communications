@@ -7,15 +7,27 @@ Define_Module(PacketScheduler);
 void PacketScheduler::initialize()
 {
     cModule *satCom = getParentModule()->getParentModule();
-
     cModule *oracleModule = satCom->getSubmodule("oracle");
     oracle = check_and_cast<Oracle*>(oracleModule);
 
     satellite = satCom->getSubmodule("satellite");
     terminalCount = satCom->par("terminalCount").intValue();
-    communicationSlotDuration =
-                SimTime(satCom->par("communicationSlotDuration").doubleValue());
     blocksPerFrame = par("blocksPerFrame").intValue();
+    communicationSlotDuration =
+                    SimTime(satCom->par("communicationSlotDuration").doubleValue());
+
+    /*
+     * In order to measure the throughput accurately, the warmup period must be
+     *  an integer multiple of the communication slot duration (which is not
+     *  a problem given that the first should be way bigger than the second).
+     */
+    long warmupTimeMS = getSimulation()->getWarmupPeriod().inUnit(SIMTIME_MS);
+    long communicationSlotDurationMS = communicationSlotDuration.inUnit(SIMTIME_MS);
+
+    if (warmupTimeMS % communicationSlotDurationMS != 0)
+    {
+        throw cRuntimeError(this, "The warmup time should be an integer multiple of the communication slot duration");
+    }
 
     /*
      * All the informations about each terminal { id, codingRate, packetQueue } are stored in a
@@ -39,12 +51,10 @@ void PacketScheduler::initialize()
     }
 
     throughputSignal = registerSignal("throughput");
+    instantaneousThroughputSignal = registerSignal("instantaneousThroughput");
+
     receivedCodingRateCount = 0;
-
-#ifdef DEBUG_SCHEDULER
     totalBitsSent = 0;
-#endif
-
 }
 
 void PacketScheduler::handleMessage(cMessage *msg)
@@ -123,27 +133,14 @@ void PacketScheduler::maxCRScheduling()
 
     Frame *frame = buildFrame();
 
-#ifdef DEBUG_SCHEDULER
-    totalBitsSent += frame->getBitLength();
-#endif
+    if (simTime() > getSimulation()->getWarmupPeriod())
+    {
+        totalBitsSent += frame->getBitLength();
 
-    /*
-     * The throughput statistic uses sumPerDuration(throughputSignal) as a source, and records its last value.
-     *
-     * The sumPerDuration filter does the following:
-     *  1. Adds the emitted value to to the sum of all the values emitted until then
-     *  2. Divides that number by the "duration" of the filter
-     *  3. Outputs the result of the last operation
-     * By default, the "duration" of the filter is equal to the current simulation time.
-     *
-     * This means that since the first emission happens at simulation time 0, without
-     *  particular precautions, the first recorded throughput would be infinite.
-     *
-     * Since, in the reals system, the frame actually arrives to the terminals within a communication slot,
-     *  then it is fair to emit the throughputSignal a communication slot after the current simulation time.
-     */
-    cTimestampedValue scheduledEmit(simTime() + communicationSlotDuration, frame->getBitLength());
-    emit(throughputSignal, &scheduledEmit);
+        /* Wrapping the emits in the if statement avoids dividing by zero in the first emit call */
+        emit(throughputSignal, totalBitsSent / (simTime() - getSimulation()->getWarmupPeriod()).dbl());
+        emit(instantaneousThroughputSignal, frame->getBitLength() / communicationSlotDuration.dbl());
+    }
 
     sendDirect(frame, satellite, "in");
 
@@ -424,12 +421,4 @@ void PacketScheduler::finish()
     {
         terminal.packetQueue.clear();
     }
-
-#ifdef DEBUG_SCHEDULER
-    /* Print the expected throughput */
-    EV_DEBUG << "[packetScheduler]> " << endl
-            << "\tTotal bits sent: " << totalBitsSent << endl
-            << "\tSimulation time: " << simTime().dbl() << " s" << endl
-            << "\tExpected throughput: " << (double)totalBitsSent / simTime().dbl() << " bps" << endl;
-#endif
 }

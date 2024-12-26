@@ -41,6 +41,7 @@
 /omnetpp/satellite-communications/simulations/results
 ## Files
 omnetpp/satellite-communications/simulations/.qtenvrc
+omnetpp/satellite-communications/simulations/.cmdenv-log
 omnetpp/satellite-communications/src/satellite-communications_dbg
 omnetpp/satellite-communications/.settings/language.settings.xml
 omnetpp/satellite-communications/simulations/General.anf
