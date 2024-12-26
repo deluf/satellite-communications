@@ -8,6 +8,7 @@ void Terminal::initialize()
 {
     cModule *satCom = getParentModule();
 
+    terminalCount = satCom->par("terminalCount").intValue();
     satellite = satCom->getSubmodule("satellite");
     delaySignal = registerSignal("delay");
 
@@ -47,8 +48,25 @@ void Terminal::handleMessage(cMessage *msg)
 
 void Terminal::handleTimer()
 {
-    /* Each communication slot begins with the terminals sending their coding rates to the ground station */
-    CODING_RATE codingRate = (CODING_RATE)par("codingRate").intValue();
+    /*
+     * Each communication slot begins with the terminals sending their coding rates to the ground station.
+     *  According to the value of the parameter "condingRateUniformDistributed", we change the distribution
+     *   of the coding rates.
+     *  The probability of success of the binomial distribution is computed so that the mean value (n*p) of each terminal
+     *   will be sensibly different from the others.
+     */
+    CODING_RATE codingRate;
+    if (par("codingRateUniformDistributed").boolValue())
+    {
+        codingRate = (CODING_RATE)par("codingRate").intValue();
+        EV_INFO << "[terminal " << id << "]> Coding rate extracted from the uniform distribution" << endl;
+    }
+    else
+    {
+        double p = (double)(id + 1)/(terminalCount + 1);
+        codingRate = (CODING_RATE)binomial(6,p);
+        EV_INFO << "[terminal " << id << "]> Coding rate extracted from the binomial distribution, with probability of success: " << p << endl;
+    }
 
 #ifdef DEBUG_RNGS
     EV_DEBUG << std::fixed << std::setprecision(5) << simTime().dbl() << " - [terminal " << id

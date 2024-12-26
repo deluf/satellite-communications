@@ -19,6 +19,7 @@ class Terminal : public cSimpleModule
     simsignal_t delaySignal;
     simtime_t communicationSlotDuration;
     int id;
+    int terminalCount;
 
     void handleTimer();
     void handleFrame(Frame *frame);
