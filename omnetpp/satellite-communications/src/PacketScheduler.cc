@@ -421,4 +421,43 @@ void PacketScheduler::finish()
     {
         terminal.packetQueue.clear();
     }
+
+    /*
+     * Deallocating all packets still owned by PacketScheduler to avoid "undisposed object" messages.
+     * Only really necessary if simulation is halted when the frames are still in transit.
+     */
+    cSimulation* sim = getSimulation();
+    cFutureEventSet* fes = sim->getFES();
+    int numEvents = fes->getLength();
+
+    for (int i = 0; i < numEvents; i++)
+    {
+        cEvent *event = fes->get(i);
+
+        /* Skipping the event if not a frame */
+        if(!event->isName("frame"))
+            continue;
+
+        Frame *frame = check_and_cast<Frame *>(event);
+
+        /* Iterating through all blocks to delete all packets */
+        int numBlocks = frame->getBlocksArraySize();
+        for (int i = 0; i < numBlocks; ++i) {
+            Block& block = frame->getBlocksForUpdate(i);
+            int numPackets = block.getPacketsArraySize();
+            for (int j = 0; j < numPackets; ++j)
+            {
+                Packet *packet = block.getPacketsForUpdate(j);
+                if (packet != nullptr)
+                {
+                    delete packet;
+                    block.setPackets(j, nullptr);
+                }
+            }
+        }
+
+        /* Breaking after the first frame, all frames contain the same list of pointers */
+        break;
+    }
+
 }
