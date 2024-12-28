@@ -35,7 +35,7 @@ class PacketScheduler : public cSimpleModule
     void handlePacket(Packet *packet);
     void handleCodingRatePacket(CodingRatePacket *codingRatePacket);
     void maxCRScheduling();
-    const int getMaxBlockBytes(CODING_RATE codingRate) const;
+    const int maxBytesInBlock(CODING_RATE codingRate) const;
     void initBlock(Block *block, CODING_RATE codingRate, bool isForNewPacket, int currentBlockIndex);
     bool canSchedule(TerminalDescriptor *terminal, Block *block, int currentBlockIndex);
     bool fits(Packet *packet, Frame *frame, int currentBlockIndex);

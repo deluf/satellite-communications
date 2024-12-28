@@ -11,15 +11,23 @@
 
 using namespace omnetpp;
 
+enum CODING_RATE_DISTRIBUTION
+{
+    UNIFORM,
+    BINOMIAL,
+    NORMAL
+};
+
 class Terminal : public cSimpleModule
 {
     Oracle *oracle;
     cMessage *timer;
     cModule *satellite;
-    simsignal_t delaySignal;
+    simsignal_t delaySignal, debugCodingRateDistributionSignal;
     simtime_t communicationSlotDuration;
     int id;
     int terminalCount;
+    CODING_RATE_DISTRIBUTION codingRateDistribution;
 
     void handleTimer();
     void handleFrame(Frame *frame);

@@ -10,7 +10,6 @@
 #CFLAGS += -DDEBUG_RNGS
 
 # Detailed debug statements regarding the scheduling process.
-# Also provides an expected throughput once finish() is called. 
 #CFLAGS += -DDEBUG_SCHEDULER
 
 # Detailed debug statements regarding the registration of packets segments 

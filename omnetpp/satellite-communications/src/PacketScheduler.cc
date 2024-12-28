@@ -133,6 +133,11 @@ void PacketScheduler::maxCRScheduling()
 
     Frame *frame = buildFrame();
 
+    if (frame->getByteLength() > maxBytesInBlock(H3) * blocksPerFrame)
+    {
+        throw cRuntimeError(this, "The size of the current frame is greater than its maximum theoretical size");
+    }
+
     if (simTime() > getSimulation()->getWarmupPeriod())
     {
         totalBitsSent += frame->getBitLength();
@@ -232,7 +237,7 @@ Frame *PacketScheduler::buildFrame()
     return frame;
 }
 
-const int PacketScheduler::getMaxBlockBytes(CODING_RATE codingRate) const
+const int PacketScheduler::maxBytesInBlock(CODING_RATE codingRate) const
 {
     int blockSize;
     switch (codingRate)
@@ -261,12 +266,17 @@ const int PacketScheduler::getMaxBlockBytes(CODING_RATE codingRate) const
         default:
             throw cRuntimeError(this, "The specified coding rate does not have an associated block size");
     }
+
+    /*
+     * In case the result of the division is not an integer, it gets truncated.
+     *  e.g. blocksPerFrame = 5, codingRate = R => maxBytes = floor(2712 / 5) = floor(542.4) = 542
+     */
     return blockSize / blocksPerFrame;
 }
 
 void PacketScheduler::initBlock(Block *block, CODING_RATE codingRate, bool isForNewPacket, int currentBlockIndex)
 {
-    int maxBytes = getMaxBlockBytes(codingRate);
+    int maxBytes = maxBytesInBlock(codingRate);
 
     block->setCodingRate(codingRate);
     block->setMaxBytes(maxBytes);
@@ -331,7 +341,7 @@ bool PacketScheduler::fits(Packet *packet, Frame *frame, int currentBlockIndex)
     int freeBlocks = blocksPerFrame - 1 - currentBlockIndex;
     int availableBytesInCurrentBlock = block->getMaxBytes() - block->getUsedBytes();
     int availableBytesInFrame = availableBytesInCurrentBlock
-            + freeBlocks * getMaxBlockBytes(codingRate);
+            + freeBlocks * maxBytesInBlock(codingRate);
 
     if (packetBytesLeft > availableBytesInFrame)
     {
@@ -365,16 +375,6 @@ void PacketScheduler::allocatePacketSegment(Packet *packet, Frame *frame, int &l
         frame->addByteLength(lastPacketBytesLeft);
         terminal->packetQueue.pop();
 
-        /*
-        * Each terminal is responsible for deallocating its own packets.
-        * In order to do that, ownership of such packets must be claimed.
-        * This is because packets are not sent with a traditional "send()" function,
-        *  but carried as objects inside another message (the frame).
-        * Of course, the sender must collaborate and drop() the ownership
-        *  of the packets before appending them to the frame.
-        */
-        drop(packet);
-
 #ifdef DEBUG_SCHEDULER
         EV_DEBUG << "[packetScheduler]> \t\t\t - Allocated the last (or only) segment of "
                << lastPacketBytesLeft << " bytes in block " << currentBlockIndex << endl;
@@ -397,8 +397,6 @@ void PacketScheduler::allocatePacketSegment(Packet *packet, Frame *frame, int &l
     block->appendPackets(packetSegment);
     frame->addByteLength(availableBytesInCurrentBlock);
 
-    drop(packetSegment);
-
 #ifdef DEBUG_SCHEDULER
     EV_DEBUG << "[packetScheduler]> \t\t\t - Allocated a segment of " << availableBytesInCurrentBlock
        << " bytes in block " << currentBlockIndex << ", which is now full, allocating a new block" << endl;
@@ -413,50 +411,46 @@ void PacketScheduler::allocatePacketSegment(Packet *packet, Frame *frame, int &l
 
 void PacketScheduler::finish()
 {
-    /*
-     * Deallocate all the packets still in the queues.
-     * Not really necessary but avoids the annoying "undisposed object" messages.
-     */
+    /* In order to avoid annoying "undisposed object" messages (that could also hide a memory leak) we must: */
+
+    /* 1. Deallocate all the packets still in the queues */
     for (TerminalDescriptor &terminal : terminals)
     {
         terminal.packetQueue.clear();
     }
 
-    /*
-     * Deallocating all packets still owned by PacketScheduler to avoid "undisposed object" messages.
-     * Only really necessary if simulation is halted when the frames are still in transit.
-     */
-    cSimulation* sim = getSimulation();
-    cFutureEventSet* fes = sim->getFES();
-    int numEvents = fes->getLength();
-
+    /* 2. Deallocate all the packets embedded in ongoing frames (if any) */
+    cFutureEventSet* FES = getSimulation()->getFES();
+    int numEvents = FES->getLength();
     for (int i = 0; i < numEvents; i++)
     {
-        cEvent *event = fes->get(i);
+        cEvent *event = FES->get(i);
 
-        /* Skipping the event if not a frame */
         if(!event->isName("frame"))
+        {
             continue;
+        }
 
         Frame *frame = check_and_cast<Frame *>(event);
 
         /* Iterating through all blocks to delete all packets */
         int numBlocks = frame->getBlocksArraySize();
-        for (int i = 0; i < numBlocks; ++i) {
-            Block& block = frame->getBlocksForUpdate(i);
-            int numPackets = block.getPacketsArraySize();
-            for (int j = 0; j < numPackets; ++j)
+        for (int i = 0; i < numBlocks; i++)
+        {
+            Block *block = &frame->getBlocksForUpdate(i);
+            int numPackets = block->getPacketsArraySize();
+            for (int j = 0; j < numPackets; j++)
             {
-                Packet *packet = block.getPacketsForUpdate(j);
+                Packet *packet = block->getPacketsForUpdate(j);
                 if (packet != nullptr)
                 {
                     delete packet;
-                    block.setPackets(j, nullptr);
+                    block->setPackets(j, nullptr);
                 }
             }
         }
 
-        /* Breaking after the first frame, all frames contain the same list of pointers */
+        /* All the frames contain the same list of pointers, which must only be freed once */
         break;
     }
 

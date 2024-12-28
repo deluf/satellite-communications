@@ -11,10 +11,30 @@ void Terminal::initialize()
     terminalCount = satCom->par("terminalCount").intValue();
     satellite = satCom->getSubmodule("satellite");
     delaySignal = registerSignal("delay");
+    debugCodingRateDistributionSignal = registerSignal("debugCodingRateDistribution");
 
     id = getIndex();
     communicationSlotDuration =
             SimTime(satCom->par("communicationSlotDuration").doubleValue());
+
+    const char *codingRateDistributionString = par("codingRateDistribution").stringValue();
+    if (strcmp(codingRateDistributionString, "uniform") == 0)
+    {
+        codingRateDistribution = UNIFORM;
+    }
+    else if (strcmp(codingRateDistributionString, "binomial") == 0)
+    {
+        codingRateDistribution = BINOMIAL;
+    }
+    else if (strcmp(codingRateDistributionString, "normal") == 0)
+    {
+        codingRateDistribution = NORMAL;
+    }
+    else
+    {
+        throw cRuntimeError(this, "Unsupported coding rate distribution. "
+                "Supported ones are: \"uniform\", \"binomial\", \"normal\"");
+    }
 
     cModule *oracleModule = satCom->getSubmodule("oracle");
     oracle = check_and_cast<Oracle*>(oracleModule);
@@ -48,25 +68,61 @@ void Terminal::handleMessage(cMessage *msg)
 
 void Terminal::handleTimer()
 {
-    /*
-     * Each communication slot begins with the terminals sending their coding rates to the ground station.
-     *  According to the value of the parameter "condingRateUniformDistributed", we change the distribution
-     *   of the coding rates.
-     *  The probability of success of the binomial distribution is computed so that the mean value (n*p) of each terminal
-     *   will be sensibly different from the others.
-     */
+    /* Each communication slot begins with the terminals sending their coding rates to the ground station. */
+
     CODING_RATE codingRate;
-    if (par("codingRateUniformDistributed").boolValue())
+    if (codingRateDistribution == UNIFORM)
     {
-        codingRate = (CODING_RATE)par("codingRate").intValue();
-        EV_INFO << "[terminal " << id << "]> Coding rate extracted from the uniform distribution" << endl;
+        codingRate = (CODING_RATE)intuniform(0, 6);
+        EV_INFO << "[terminal " << id << "]> Coding rate extracted from a uniform distribution" << endl;
+    }
+    else if (codingRateDistribution == BINOMIAL)
+    {
+        /*
+         * The probability of success of the binomial distribution is computed so that the mean
+         *  coding rate (n*p) of each terminal is sensibly different from all the others.
+         */
+        double p = (double)(id + 1)/(terminalCount + 1);
+        codingRate = (CODING_RATE)binomial(6, p);
+        EV_INFO << "[terminal " << id << "]> Coding rate extracted from a binomial distribution with probability of success p: " << p << endl;
+    }
+    else if (codingRateDistribution == NORMAL)
+    {
+        double normalCodingRate = normal(3.5, 1.25);
+
+        /*
+         * By adjusting the extremes and truncating, the following probabilities are obtained:
+         *  x < 1       => L3    02.275 %
+         *  1 <= x < 2  => L2    09.232 %
+         *  2 <= x < 3  => L1    22.951 %
+         *  3 <= x < 4  => R     31.084 %
+         *  4 <= x < 5  => H1    22.951 %
+         *  5 <= x < 6  => H2    09.232 %
+         *  x => 6      => H3    02.275 %
+         */
+
+        if (normalCodingRate < 1)
+        {
+            codingRate = L3;
+        }
+        else if (normalCodingRate >= 6)
+        {
+            codingRate = H3;
+        }
+        else
+        {
+            codingRate = (CODING_RATE)normalCodingRate;
+        }
+
+        EV_INFO << "[terminal " << id << "]> Coding rate extracted from a normal distribution" << endl;
     }
     else
     {
-        double p = (double)(id + 1)/(terminalCount + 1);
-        codingRate = (CODING_RATE)binomial(6,p);
-        EV_INFO << "[terminal " << id << "]> Coding rate extracted from the binomial distribution, with probability of success: " << p << endl;
+        throw cRuntimeError(this, "Unsupported coding rate distribution. "
+                "Supported ones are: \"uniform\", \"binomial\", \"normal\"");
     }
+
+    emit(debugCodingRateDistributionSignal, codingRate);
 
 #ifdef DEBUG_RNGS
     EV_DEBUG << std::fixed << std::setprecision(5) << simTime().dbl() << " - [terminal " << id
