@@ -50,7 +50,7 @@ void Satellite::handleMessage(cMessage *msg)
     }
     else
     {
-        throw cRuntimeError(this, "The satellite can't handle the received "
-                "message. Supported types are: \"codingRatePacket\", \"frame\"");
+        throw cRuntimeError(this, "The satellite cannot handle the received message: %s. "
+                "Supported types are: \"codingRatePacket\", \"frame\"", msg->getName());
     }
 }

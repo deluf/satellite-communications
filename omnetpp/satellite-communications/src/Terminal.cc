@@ -32,8 +32,9 @@ void Terminal::initialize()
     }
     else
     {
-        throw cRuntimeError(this, "Unsupported coding rate distribution. "
-                "Supported ones are: \"uniform\", \"binomial\", \"normal\"");
+        throw cRuntimeError(this, "Unsupported coding rate distribution: %s. "
+                "Supported ones are: \"uniform\", \"binomial\", \"normal\"",
+                codingRateDistributionString);
     }
 
     cModule *oracleModule = satCom->getSubmodule("oracle");
@@ -61,8 +62,8 @@ void Terminal::handleMessage(cMessage *msg)
     }
     else
     {
-        throw cRuntimeError(this, "The terminal can't handle the received "
-                "message. Supported types are: \"timer\" (selfMessage), \"frame\"");
+        throw cRuntimeError(this, "The terminal cannot handle the received message: %s. "
+                "Supported types are: \"timer\" (selfMessage), \"frame\"", msg->getName());
     }
 }
 
@@ -118,15 +119,16 @@ void Terminal::handleTimer()
     }
     else
     {
-        throw cRuntimeError(this, "Unsupported coding rate distribution. "
-                "Supported ones are: \"uniform\", \"binomial\", \"normal\"");
+        throw cRuntimeError(this, "Unsupported coding rate distribution: %d. "
+                "Supported ones are: \"uniform\" (0), \"binomial\" (1), \"normal\" (2)",
+                codingRateDistribution);
     }
 
     emit(debugCodingRateDistributionSignal, codingRate);
 
 #ifdef DEBUG_RNGS
-    EV_DEBUG << std::fixed << std::setprecision(5) << simTime().dbl() << " - [terminal " << id
-            << "]> Extracted codingRate | Total RNG calls: " << getRNG(0)->getNumbersDrawn() << endl;
+    EV_DEBUG << std::fixed << std::setprecision(5) << "[" << simTime().dbl() << "]> Extracted codingRate"
+            " for terminal " << id << " | Total RNG calls: " << getRNG(0)->getNumbersDrawn() << endl;
 #endif
 
     CodingRatePacket *codingRatePacket = new CodingRatePacket("codingRatePacket");
@@ -136,7 +138,7 @@ void Terminal::handleTimer()
 
     EV_INFO << "[terminal " << id << "]> For the communication slot [" << simTime().dbl() << " - "
             << (simTime() + communicationSlotDuration).dbl() << "]s my coding rate will be "
-            << codingRateToString[codingRate] << endl;
+            << codingRateToString(codingRate) << endl;
 
     /* Schedule the next communication slot */
     scheduleAt(simTime() + communicationSlotDuration, timer);
@@ -154,8 +156,7 @@ void Terminal::handleFrame(Frame *frame)
 
     /*
      * At the transmitter, packets may be splitted in multiple blocks.
-     *  To get the original size of each packet, we
-     *   need to sum the sizes of all the segments.
+     * To get the original size of each packet, we need to sum the sizes of all the segments.
      */
     int totalPacketSize = 0;
 
@@ -171,18 +172,19 @@ void Terminal::handleFrame(Frame *frame)
 
 #ifdef DEBUG_TERMINALS
         EV_DEBUG << "[terminal " << id << "]> Fetched { blockIndex: " << packetLocation->blockIndex
-                << ", packetIndex: " << packetLocation->packetIndex << ", lastPiece: "
+                << ", packetIndex: " << packetLocation->packetIndex << ", isLastSegment: "
                 << packetLocation->isLastSegment << "}" << endl;
 #endif
 
         if (packet->getTerminalId() != id)
         {
-            throw cRuntimeError(this, "A terminal was allowed to read a packet destined to another terminal");
+            throw cRuntimeError(this, "Terminal %d was allowed to read a packet "
+                    "destined to terminal %d", id, packet->getTerminalId());
         }
 
         totalPacketSize += packet->getByteLength();
 
-        /* The delay statistic of a packet can only be emitted when the packet has been fully fetched */
+        /* The delay statistic of a packet can only be emitted when the last segment is fetched */
         if (packetLocation->isLastSegment)
         {
             double delay = (simTime() - packet->getCreationTime()).dbl();
@@ -198,8 +200,6 @@ void Terminal::handleFrame(Frame *frame)
          * In order to do that, ownership of such packets must be claimed.
          * This is because packets are not sent with a traditional "send()" function,
          *  but carried as objects inside another message (the frame).
-         * Of course, the sender must collaborate and drop() the ownership
-         *  of the packets before appending them to the frame.
          */
         take(packet);
         delete packet;
@@ -207,7 +207,7 @@ void Terminal::handleFrame(Frame *frame)
         packetLocations.pop_front();
     }
 
-    /* Each terminal receives a copy of the same frame, and is responsible for its deallocation */
+    /* Each terminal receives a copy of the same frame, and is responsible for its de-allocation */
     delete frame;
 }
 

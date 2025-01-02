@@ -12,9 +12,14 @@ void PacketScheduler::initialize()
 
     satellite = satCom->getSubmodule("satellite");
     terminalCount = satCom->par("terminalCount").intValue();
-    blocksPerFrame = par("blocksPerFrame").intValue();
     communicationSlotDuration =
                     SimTime(satCom->par("communicationSlotDuration").doubleValue());
+    blocksPerFrame = par("blocksPerFrame").intValue();
+
+    if (blocksPerFrame < 0)
+    {
+        throw cRuntimeError(this, "blocksPerFrame (%d) must be a non negative integer", blocksPerFrame);
+    }
 
     /*
      * In order to measure the throughput accurately, the warmup period must be
@@ -71,8 +76,8 @@ void PacketScheduler::handleMessage(cMessage *msg)
     }
     else
     {
-        throw cRuntimeError(this, "The packetScheduler can't handle the received "
-                "message. Supported types are: \"codingRatePacket\", \"packet\"");
+        throw cRuntimeError(this, "The packetScheduler can't handle the received message: %s. "
+                "Supported types are: \"codingRatePacket\", \"packet\"", msg->getName());
     }
 }
 
@@ -96,7 +101,7 @@ void PacketScheduler::handleCodingRatePacket(CodingRatePacket *codingRatePacket)
     terminals[terminalId].codingRate = codingRate;
     receivedCodingRateCount++;
 
-    EV_INFO << "[packetScheduler]> Received coding rate " << codingRateToString[codingRate]
+    EV_INFO << "[packetScheduler]> Received coding rate " << codingRateToString(codingRate)
              << " for terminal "<< terminalId << ", "
              << terminalCount - receivedCodingRateCount << " remaining" << endl;
 
@@ -126,16 +131,17 @@ void PacketScheduler::maxCRScheduling()
     for (TerminalDescriptor* &terminal: sortedTerminals)
     {
         EV_DEBUG << "[packetScheduler]> \t\t{ id: " << terminal->id << ", codingRate: "
-                << codingRateToString[terminal->codingRate] << ", queueLength: "
+                << codingRateToString(terminal->codingRate) << ", queueLength: "
                 << terminal->packetQueue.getLength() << " }" << endl;
     }
 #endif
 
     Frame *frame = buildFrame();
 
-    if (frame->getByteLength() > maxBytesInBlock(H3) * blocksPerFrame)
+    if (frame->getByteLength() > getMaxTheoreticalFrameBytes())
     {
-        throw cRuntimeError(this, "The size of the current frame is greater than its maximum theoretical size");
+        throw cRuntimeError(this, "The size of the current frame (%lld) is greater than the maximum "
+                "theoretical size (%d)", frame->getByteLength(), getMaxTheoreticalFrameBytes());
     }
 
     if (simTime() > getSimulation()->getWarmupPeriod())
@@ -172,7 +178,7 @@ Frame *PacketScheduler::buildFrame()
 
 #ifdef DEBUG_SCHEDULER
         EV_DEBUG << endl << "[packetScheduler]> Serving terminal { id: " << terminal->id
-                << ", codingRate: " << codingRateToString[terminal->codingRate]
+                << ", codingRate: " << codingRateToString(terminal->codingRate)
                 << ", queueLength: " << terminal->packetQueue.getLength() << " }" << endl;
 
         if (terminal->packetQueue.isEmpty())
@@ -239,39 +245,11 @@ Frame *PacketScheduler::buildFrame()
 
 const int PacketScheduler::maxBytesInBlock(CODING_RATE codingRate) const
 {
-    int blockSize;
-    switch (codingRate)
-    {
-        case L3:
-            blockSize = 904;
-            break;
-        case L2:
-            blockSize = 1356;
-            break;
-        case L1:
-            blockSize = 1808;
-            break;
-        case R:
-            blockSize = 2260;
-            break;
-        case H1:
-            blockSize = 2712;
-            break;
-        case H2:
-            blockSize = 3164;
-            break;
-        case H3:
-            blockSize = 3616;
-            break;
-        default:
-            throw cRuntimeError(this, "The specified coding rate does not have an associated block size");
-    }
-
     /*
      * In case the result of the division is not an integer, it gets truncated.
      *  e.g. blocksPerFrame = 5, codingRate = R => maxBytes = floor(2712 / 5) = floor(542.4) = 542
      */
-    return blockSize / blocksPerFrame;
+    return codingRateToMaxFrameBytes(codingRate) / blocksPerFrame;
 }
 
 void PacketScheduler::initBlock(Block *block, CODING_RATE codingRate, bool isForNewPacket, int currentBlockIndex)
@@ -289,7 +267,7 @@ void PacketScheduler::initBlock(Block *block, CODING_RATE codingRate, bool isFor
     if (isForNewPacket)
     {
         EV_DEBUG << "[packetScheduler]> \t\tAllocating a new block { index: " << currentBlockIndex
-                << ", codingRate: " << codingRateToString[block->getCodingRate()]
+                << ", codingRate: " << codingRateToString(block->getCodingRate())
                 << ", usedBytes: 0, maxBytes: " << block->getMaxBytes() << "}" << endl;
     }
     #endif
@@ -299,7 +277,7 @@ bool PacketScheduler::canSchedule(TerminalDescriptor *terminal, Block *block, in
 {
 #ifdef DEBUG_SCHEDULER
     EV_DEBUG << "[packetScheduler]> \t\tConsidering the existing block { index: " << currentBlockIndex
-            << ", codingRate: " << codingRateToString[block->getCodingRate()] << ", usedBytes: "
+            << ", codingRate: " << codingRateToString(block->getCodingRate()) << ", usedBytes: "
             << block->getUsedBytes() << ", maxBytes: " << block->getMaxBytes() << "}" << endl;
 #endif
 
@@ -314,8 +292,8 @@ bool PacketScheduler::canSchedule(TerminalDescriptor *terminal, Block *block, in
     {
 #ifdef DEBUG_SCHEDULER
         EV_DEBUG << "[packetScheduler]> \t\tThe coding rate of block " << currentBlockIndex << " ("
-                << codingRateToString[block->getCodingRate()] << ") is too high for terminal "
-                << terminal->id << " (" << codingRateToString[terminal->codingRate]
+                << codingRateToString(block->getCodingRate()) << ") is too high for terminal "
+                << terminal->id << " (" << codingRateToString(terminal->codingRate)
                 << "), moving to the next block" << endl;
 #endif
 
@@ -413,13 +391,13 @@ void PacketScheduler::finish()
 {
     /* In order to avoid annoying "undisposed object" messages (that could also hide a memory leak) we must: */
 
-    /* 1. Deallocate all the packets still in the queues */
+    /* 1. De-allocate all the packets still in the queues */
     for (TerminalDescriptor &terminal : terminals)
     {
         terminal.packetQueue.clear();
     }
 
-    /* 2. Deallocate all the packets embedded in ongoing frames (if any) */
+    /* 2. De-allocate all the packets embedded in ongoing frames (if any) */
     cFutureEventSet* FES = getSimulation()->getFES();
     int numEvents = FES->getLength();
     for (int i = 0; i < numEvents; i++)

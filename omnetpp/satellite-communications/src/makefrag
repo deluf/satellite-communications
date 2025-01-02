@@ -6,10 +6,10 @@
 # Remember to run "make clean" before recompiling the project with the uncommented flags.
 #
 
-# Detailed debug statements regarding everything that in the simulation is random.
+# Detailed debug statements regarding everything that in the simulation is random
 #CFLAGS += -DDEBUG_RNGS
 
-# Detailed debug statements regarding the scheduling process.
+# Detailed debug statements regarding the scheduling process
 #CFLAGS += -DDEBUG_SCHEDULER
 
 # Detailed debug statements regarding the registration of packets segments 

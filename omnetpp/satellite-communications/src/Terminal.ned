@@ -15,7 +15,7 @@ simple Terminal
 		@signal[debugCodingRateDistribution](type = int);
 		@statistic[debugCodingRateDistributionStat](
 	   		source = debugCodingRateDistribution;
-	   		record = histogram;
+	   		record = vector;
 	   		title = "Coding rate distribution";
 		);
 		@display("i=device/cellphone2");
