@@ -11,6 +11,11 @@ using namespace omnetpp;
 
 class PacketGenerator : public cSimpleModule
 {
+    /* Maximum allowed size, a packet exceeding this value will NEVER be scheduled
+     * as it exceeds the maximum possible frame size (obtained when all blocks are H3)
+     */
+    static const int MAX_ALLOWED_SIZE = 3616;
+
     cMessage *timer;
     int id;
     int minPacketSize;

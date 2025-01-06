@@ -7,8 +7,19 @@ Define_Module(PacketGenerator);
 void PacketGenerator::initialize()
 {
     meanPacketInterarrivalTime = par("meanPacketInterarrivalTime").doubleValue();
+    if (meanPacketInterarrivalTime <= 0.0)
+        throw cRuntimeError("meanPacketInterarrivalTime (%f) must be a positive value.", meanPacketInterarrivalTime);
+
     minPacketSize = par("minPacketSize").intValue();
     maxPacketSize = par("maxPacketSize").intValue();
+
+    if (minPacketSize <= 0)
+        throw cRuntimeError("minPacketSize (%d) must be a positive integer.", minPacketSize);
+    if (minPacketSize > maxPacketSize)
+        throw cRuntimeError("minPacketSize (%d) cannot be greater than maxPacketSize (%d).", minPacketSize, maxPacketSize);
+    if (maxPacketSize > MAX_ALLOWED_SIZE)
+        throw cRuntimeError("maxPacketSize (%d) must be less than or equal to MAX_ALLOWED_SIZE (%d).", maxPacketSize, MAX_ALLOWED_SIZE);
+
     id = getIndex();
 
     /* A timer tick represents the arrival of a packet from the external world */
