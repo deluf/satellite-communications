@@ -17,6 +17,8 @@ class PacketGenerator : public cSimpleModule
     int minPacketSize;
     int maxPacketSize;
     double meanPacketInterarrivalTime;
+    simsignal_t debugArrivalTimeSignal;
+    long communicationSlotDurationMS;
 
 protected:
     virtual void initialize() override;

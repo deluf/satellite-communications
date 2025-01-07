@@ -6,6 +6,14 @@ Define_Module(PacketGenerator);
 
 void PacketGenerator::initialize()
 {
+    /* Debug signal used to plot the distribution of the arrival
+     * times of packets modulo the communication slot length.
+     */
+    debugArrivalTimeSignal = registerSignal("debugArrivalTime");
+    cModule *satCom = getParentModule()->getParentModule();
+    communicationSlotDurationMS =
+            SimTime(satCom->par("communicationSlotDuration").doubleValue()).inUnit(SIMTIME_MS);
+
     meanPacketInterarrivalTime = par("meanPacketInterarrivalTime").doubleValue();
     if (meanPacketInterarrivalTime < 0.0)
     {
@@ -59,9 +67,9 @@ void PacketGenerator::handleMessage(cMessage *msg)
      * Received messages are self messages (timers) by design (there are no input ports).
      * When a timer ticks, a new packet gets created and sent to the scheduler.
      */
+    emit(debugArrivalTimeSignal, simTime().inUnit(SIMTIME_MS) % communicationSlotDurationMS);
 
     int byteLength = intuniform(minPacketSize, maxPacketSize);
-
     Packet *packet = new Packet("packet");
     packet->setTerminalId(id);
     packet->setByteLength(byteLength);
