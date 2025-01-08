@@ -10,16 +10,19 @@ simple PacketScheduler
         (
         	source = throughput;
         	record = last, vector;
-        	title = "Throughput";
-        	unit = "bps"; 
         );
         @signal[instantaneousThroughput](type=double);
         @statistic[instantaneousThroughputStat]
         (
         	source = instantaneousThroughput;
+        	record = vector;
+        );
+        @display("i=block/join");
+        @signal[frameUtilization](type=double);
+        @statistic[frameUtilizationStat]
+        (
+        	source = frameUtilization;
         	record = mean, vector;
-        	title = "Instantaneous throughput";
-        	unit = "bps"; 
         );
         @display("i=block/join");
         

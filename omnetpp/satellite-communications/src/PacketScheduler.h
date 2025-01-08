@@ -4,6 +4,7 @@
 
 #include <vector>
 #include <algorithm>
+#include <iomanip>
 
 #include "omnetpp.h"
 #include "Oracle.h"
@@ -23,7 +24,7 @@ class PacketScheduler : public cSimpleModule
 {
     Oracle *oracle;
     cModule *satellite;
-    simsignal_t throughputSignal, instantaneousThroughputSignal;
+    simsignal_t throughputSignal, instantaneousThroughputSignal, frameUtilizationSignal;
     simtime_t communicationSlotDuration;
     std::vector<TerminalDescriptor> terminals;
     std::vector<TerminalDescriptor*> sortedTerminals;

@@ -12,8 +12,7 @@ void PacketScheduler::initialize()
 
     satellite = satCom->getSubmodule("satellite");
     terminalCount = satCom->par("terminalCount").intValue();
-    communicationSlotDuration =
-                    SimTime(satCom->par("communicationSlotDuration").doubleValue());
+    communicationSlotDuration = SimTime(satCom->par("communicationSlotDuration").doubleValue());
     blocksPerFrame = par("blocksPerFrame").intValue();
 
     if (blocksPerFrame < 0)
@@ -57,6 +56,7 @@ void PacketScheduler::initialize()
 
     throughputSignal = registerSignal("throughput");
     instantaneousThroughputSignal = registerSignal("instantaneousThroughput");
+    frameUtilizationSignal = registerSignal("frameUtilization");
 
     receivedCodingRateCount = 0;
     totalBitsSent = 0;
@@ -144,6 +144,29 @@ void PacketScheduler::maxCRScheduling()
                 "theoretical size (%d)", frame->getByteLength(), getMaxTheoreticalFrameBytes());
     }
 
+    long frameUsedBytes = 0;
+    long frameMaxBytes = 0;
+    for (int i = 0; i < blocksPerFrame; i++)
+    {
+        Block *block = &frame->getBlocksForUpdate(i);
+        frameUsedBytes += block->getUsedBytes();
+        frameMaxBytes += block->getMaxBytes();
+    }
+
+    if (frameUsedBytes != frame->getByteLength())
+    {
+        throw cRuntimeError(this, "The size of the current frame (%lld) is different from the sum of "
+                "the sizes of the contained blocks (%ld)", frame->getByteLength(), frameUsedBytes);
+    }
+
+    if (frameUsedBytes > frameMaxBytes)
+    {
+        throw cRuntimeError(this, "The size of the current frame (%ld) is greater than the capacities"
+                " of the contained blocks (%ld)", frameUsedBytes, frameMaxBytes);
+    }
+
+    double frameUtilization = (double)frameUsedBytes / (double)frameMaxBytes;
+
     if (simTime() > getSimulation()->getWarmupPeriod())
     {
         totalBitsSent += frame->getBitLength();
@@ -151,11 +174,13 @@ void PacketScheduler::maxCRScheduling()
         /* Wrapping the emits in the if statement avoids dividing by zero in the first emit call */
         emit(throughputSignal, totalBitsSent / (simTime() - getSimulation()->getWarmupPeriod()).dbl());
         emit(instantaneousThroughputSignal, frame->getBitLength() / communicationSlotDuration.dbl());
+        emit(frameUtilizationSignal, frameUtilization);
     }
 
     sendDirect(frame, satellite, "in");
 
-    EV_INFO << "[packetScheduler]> Sent a frame of size " << frame->getByteLength() << " bytes" << endl;
+    EV_INFO << "[packetScheduler]> Sent a frame of " << frameUsedBytes << " bytes out of a capacity of "
+            << frameMaxBytes << " bytes (utilization: " << frameUtilization * 100 << " %)" << endl;
 }
 
 Frame *PacketScheduler::buildFrame()

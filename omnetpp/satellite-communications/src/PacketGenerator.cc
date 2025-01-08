@@ -6,10 +6,11 @@ Define_Module(PacketGenerator);
 
 void PacketGenerator::initialize()
 {
-    /* Debug signal used to plot the distribution of the arrival
-     * times of packets modulo the communication slot length.
+    /*
+     * Debug signal used to plot the distribution of the arrival
+     *  times of the packets modulo the communication slot duration.
      */
-    debugArrivalTimeSignal = registerSignal("debugArrivalTime");
+    debugWithinSlotArrivalTimeSignal = registerSignal("debugWithinSlotArrivalTime");
     cModule *satCom = getParentModule()->getParentModule();
     communicationSlotDurationMS =
             SimTime(satCom->par("communicationSlotDuration").doubleValue()).inUnit(SIMTIME_MS);
@@ -67,13 +68,14 @@ void PacketGenerator::handleMessage(cMessage *msg)
      * Received messages are self messages (timers) by design (there are no input ports).
      * When a timer ticks, a new packet gets created and sent to the scheduler.
      */
-    emit(debugArrivalTimeSignal, simTime().inUnit(SIMTIME_MS) % communicationSlotDurationMS);
 
     int byteLength = intuniform(minPacketSize, maxPacketSize);
     Packet *packet = new Packet("packet");
     packet->setTerminalId(id);
     packet->setByteLength(byteLength);
     send(packet, "out");
+
+    emit(debugWithinSlotArrivalTimeSignal, simTime().inUnit(SIMTIME_MS) % communicationSlotDurationMS);
 
 #ifdef DEBUG_RNGS
     EV_DEBUG << std::fixed << std::setprecision(5) << "[" << simTime().dbl() << "]> Extracted byteLength "

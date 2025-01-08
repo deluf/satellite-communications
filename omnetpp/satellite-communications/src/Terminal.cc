@@ -14,8 +14,7 @@ void Terminal::initialize()
     debugCodingRateDistributionSignal = registerSignal("debugCodingRateDistribution");
 
     id = getIndex();
-    communicationSlotDuration =
-            SimTime(satCom->par("communicationSlotDuration").doubleValue());
+    communicationSlotDuration = SimTime(satCom->par("communicationSlotDuration").doubleValue());
 
     const char *codingRateDistributionString = par("codingRateDistribution").stringValue();
     if (strcmp(codingRateDistributionString, "uniform") == 0)

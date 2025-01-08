@@ -13,11 +13,11 @@ using namespace omnetpp;
 class PacketGenerator : public cSimpleModule
 {
     cMessage *timer;
+    simsignal_t debugWithinSlotArrivalTimeSignal;
     int id;
     int minPacketSize;
     int maxPacketSize;
     double meanPacketInterarrivalTime;
-    simsignal_t debugArrivalTimeSignal;
     long communicationSlotDurationMS;
 
 protected:

@@ -9,14 +9,11 @@ simple Terminal
 		@statistic[delayStat](
 	   		source = delay;
 	   		record = mean, vector;
-	   		title = "Delay";
-	   		unit = "ms";
 		);
 		@signal[debugCodingRateDistribution](type = int);
 		@statistic[debugCodingRateDistributionStat](
 	   		source = debugCodingRateDistribution;
 	   		record = vector;
-	   		title = "Coding rate distribution";
 		);
 		@display("i=device/cellphone2");
 	   
