@@ -34,14 +34,14 @@ class PacketScheduler : public cSimpleModule
     int blocksPerFrame;
     long totalBitsSent;
 
-    void handlePacket(Packet *packet);
+    void handlePacket(GenericPacket *packet);
     void handleCodingRatePacket(CodingRatePacket *codingRatePacket);
     void maxCRScheduling();
     const int maxBytesInBlock(CODING_RATE codingRate) const;
     void initBlock(Block *block, CODING_RATE codingRate, bool isForNewPacket, int currentBlockIndex);
     bool canSchedule(TerminalDescriptor *terminal, Block *block, int currentBlockIndex);
-    bool fits(Packet *packet, Frame *frame, int currentBlockIndex);
-    void allocatePacketSegment(Packet *packet, Frame *frame, int &lastPacketBytesLeft, int &currentBlockIndex);
+    bool fits(GenericPacket *packet, Frame *frame, int currentBlockIndex);
+    void allocatePacketSegment(GenericPacket *packet, Frame *frame, int &lastPacketBytesLeft, int &currentBlockIndex);
     Frame *buildFrame();
 
 protected:

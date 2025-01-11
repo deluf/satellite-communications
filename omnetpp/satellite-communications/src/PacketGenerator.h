@@ -5,7 +5,7 @@
 #include <iomanip>
 
 #include "omnetpp.h"
-#include "Packet_m.h"
+#include "GenericPacket_m.h"
 #include "CodingRatePacket_m.h"
 
 using namespace omnetpp;

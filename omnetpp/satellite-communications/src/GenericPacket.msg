@@ -1,5 +1,5 @@
 
-packet Packet
+packet GenericPacket
 {
     int terminalId;
 };

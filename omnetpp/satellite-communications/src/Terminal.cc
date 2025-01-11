@@ -156,7 +156,7 @@ void Terminal::handleFrame(Frame *frame)
         int packetIndex = packetLocation->packetIndex;
 
         Block *block = &frame->getBlocksForUpdate(blockIndex);
-        Packet *packet = block->getPacketsForUpdate(packetIndex);
+        GenericPacket *packet = block->getPacketsForUpdate(packetIndex);
 
 #ifdef DEBUG_TERMINALS
         EV_DEBUG << "[terminal " << id << "]> Fetched { blockIndex: " << packetLocation->blockIndex

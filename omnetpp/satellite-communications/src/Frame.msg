@@ -6,7 +6,7 @@ class Block extends cObject
     int maxBytes;
     int usedBytes;
  	CODING_RATE codingRate;
-    Packet *packets[];
+    GenericPacket *packets[];
 };
 
 packet Frame

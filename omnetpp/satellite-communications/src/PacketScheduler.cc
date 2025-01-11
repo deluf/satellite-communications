@@ -66,9 +66,9 @@ void PacketScheduler::initialize()
 
 void PacketScheduler::handleMessage(cMessage *msg)
 {
-    if (msg->isName("packet"))
+    if (msg->isName("genericPacket"))
     {
-        Packet *packet = check_and_cast<Packet*>(msg);
+        GenericPacket *packet = check_and_cast<GenericPacket*>(msg);
         handlePacket(packet);
     }
     else if (msg->isName("codingRatePacket"))
@@ -83,7 +83,7 @@ void PacketScheduler::handleMessage(cMessage *msg)
     }
 }
 
-void PacketScheduler::handlePacket(Packet *packet)
+void PacketScheduler::handlePacket(GenericPacket *packet)
 {
     /* When a packet arrives from a packetGenerator, it is inserted into the appropriate packetQueue */
 
@@ -241,7 +241,7 @@ Frame *PacketScheduler::buildFrame()
                 continue;
             }
 
-            Packet *packet = check_and_cast<Packet*>(terminal->packetQueue.front());
+            GenericPacket *packet = check_and_cast<GenericPacket*>(terminal->packetQueue.front());
 
             /* If there are still bytes left from the previous packet, this check has already been made */
             if (lastPacketBytesLeft == -1)
@@ -332,7 +332,7 @@ bool PacketScheduler::canSchedule(TerminalDescriptor *terminal, Block *block, in
     return true;
 }
 
-bool PacketScheduler::fits(Packet *packet, Frame *frame, int currentBlockIndex)
+bool PacketScheduler::fits(GenericPacket *packet, Frame *frame, int currentBlockIndex)
 {
     /*
      * A new packet is being considered, let's see if it fits in the frame.
@@ -369,7 +369,7 @@ bool PacketScheduler::fits(Packet *packet, Frame *frame, int currentBlockIndex)
     return true;
 }
 
-void PacketScheduler::allocatePacketSegment(Packet *packet, Frame *frame, int &lastPacketBytesLeft, int &currentBlockIndex)
+void PacketScheduler::allocatePacketSegment(GenericPacket *packet, Frame *frame, int &lastPacketBytesLeft, int &currentBlockIndex)
 {
     TerminalDescriptor *terminal = &terminals[packet->getTerminalId()];
     Block *block = &frame->getBlocksForUpdate(currentBlockIndex);
@@ -398,7 +398,7 @@ void PacketScheduler::allocatePacketSegment(Packet *packet, Frame *frame, int &l
      * The packet must be segmented in multiple blocks.
      * This is achieved by duplicating the same packet but with different sizes.
      */
-    Packet *packetSegment = packet->dup();
+    GenericPacket *packetSegment = packet->dup();
     packetSegment->setByteLength(availableBytesInCurrentBlock);
 
     block->setUsedBytes(block->getMaxBytes());
@@ -439,7 +439,7 @@ void PacketScheduler::finish()
             continue;
         }
 
-        Frame *frame = check_and_cast<Frame *>(event);
+        Frame *frame = check_and_cast<Frame*>(event);
 
         /* Iterating through all blocks to delete all packets */
         int numBlocks = frame->getBlocksArraySize();
@@ -449,7 +449,7 @@ void PacketScheduler::finish()
             int numPackets = block->getPacketsArraySize();
             for (int j = 0; j < numPackets; j++)
             {
-                Packet *packet = block->getPacketsForUpdate(j);
+                GenericPacket *packet = block->getPacketsForUpdate(j);
                 if (packet != nullptr)
                 {
                     delete packet;

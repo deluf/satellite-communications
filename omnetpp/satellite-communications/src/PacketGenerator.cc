@@ -70,7 +70,7 @@ void PacketGenerator::handleMessage(cMessage *msg)
      */
 
     int byteLength = intuniform(minPacketSize, maxPacketSize);
-    Packet *packet = new Packet("packet");
+    GenericPacket *packet = new GenericPacket("genericPacket");
     packet->setTerminalId(id);
     packet->setByteLength(byteLength);
     send(packet, "out");

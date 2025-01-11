@@ -1,5 +1,5 @@
 
-import Packet;
+import GenericPacket;
 
 enum CODING_RATE 
 {
@@ -66,7 +66,7 @@ static int getMaxTheoreticalFrameBytes()
 }
 }};
 
-packet CodingRatePacket extends Packet  
+packet CodingRatePacket extends GenericPacket  
 {
     CODING_RATE codingRate;
 };
