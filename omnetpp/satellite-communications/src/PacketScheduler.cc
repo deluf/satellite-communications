@@ -55,8 +55,10 @@ void PacketScheduler::initialize()
     }
 
     throughputSignal = registerSignal("throughput");
-    instantaneousThroughputSignal = registerSignal("instantaneousThroughput");
     frameUtilizationSignal = registerSignal("frameUtilization");
+
+    debugInstantaneousThroughputSignal = registerSignal("debugInstantaneousThroughput");
+    debugFrameSizeSignal = registerSignal("debugFrameSize");
 
     receivedCodingRateCount = 0;
     totalBitsSent = 0;
@@ -117,6 +119,7 @@ void PacketScheduler::handleCodingRatePacket(CodingRatePacket *codingRatePacket)
 
 void PacketScheduler::maxCRScheduling()
 {
+
     /* Terminals are sorted from highest (H3) to lowest (L3) coding rate */
     std::sort(
         sortedTerminals.begin(), sortedTerminals.end(),
@@ -173,8 +176,10 @@ void PacketScheduler::maxCRScheduling()
 
         /* Wrapping the emits in the if statement avoids dividing by zero in the first emit call */
         emit(throughputSignal, totalBitsSent / (simTime() - getSimulation()->getWarmupPeriod()).dbl());
-        emit(instantaneousThroughputSignal, frame->getBitLength() / communicationSlotDuration.dbl());
         emit(frameUtilizationSignal, frameUtilization);
+
+        emit(debugInstantaneousThroughputSignal, frame->getBitLength() / communicationSlotDuration.dbl());
+        emit(debugFrameSizeSignal, frame->getByteLength());
     }
 
     sendDirect(frame, satellite, "in");

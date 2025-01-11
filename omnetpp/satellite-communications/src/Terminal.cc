@@ -88,18 +88,7 @@ void Terminal::handleTimer()
     }
     else if (codingRateDistribution == NORMAL)
     {
-        double normalCodingRate = normal(3.5, 1.25);
-
-        /*
-         * By adjusting the extremes and truncating, the following probabilities are obtained:
-         *  x < 1       => L3    02.275 %
-         *  1 <= x < 2  => L2    09.232 %
-         *  2 <= x < 3  => L1    22.951 %
-         *  3 <= x < 4  => R     31.084 %
-         *  4 <= x < 5  => H1    22.951 %
-         *  5 <= x < 6  => H2    09.232 %
-         *  x => 6      => H3    02.275 %
-         */
+        double normalCodingRate = normal(3.5, 1);
 
         if (normalCodingRate < 1)
         {

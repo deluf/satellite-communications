@@ -24,7 +24,8 @@ class PacketScheduler : public cSimpleModule
 {
     Oracle *oracle;
     cModule *satellite;
-    simsignal_t throughputSignal, instantaneousThroughputSignal, frameUtilizationSignal;
+    simsignal_t throughputSignal, frameUtilizationSignal;
+    simsignal_t debugInstantaneousThroughputSignal, debugFrameSizeSignal;
     simtime_t communicationSlotDuration;
     std::vector<TerminalDescriptor> terminals;
     std::vector<TerminalDescriptor*> sortedTerminals;

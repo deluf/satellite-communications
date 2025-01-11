@@ -10,7 +10,7 @@ simple PacketGenerator
        	@signal[debugWithinSlotArrivalTime](type = long);
         @statistic[debugWithinSlotArrivalTimeStat](
 	   		source = debugWithinSlotArrivalTime;
-	   		record = mean, vector;
+	   		record = vector?;
 		);
         @display("i=misc/globe");
         

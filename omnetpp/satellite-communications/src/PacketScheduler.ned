@@ -11,18 +11,23 @@ simple PacketScheduler
         	source = throughput;
         	record = last, vector;
         );
-        @signal[instantaneousThroughput](type=double);
-        @statistic[instantaneousThroughputStat]
-        (
-        	source = instantaneousThroughput;
-        	record = vector;
-        );
-        @display("i=block/join");
         @signal[frameUtilization](type=double);
         @statistic[frameUtilizationStat]
         (
         	source = frameUtilization;
         	record = mean, vector;
+        );
+        @signal[debugInstantaneousThroughput](type=double);
+        @statistic[debugInstantaneousThroughputStat]
+        (
+        	source = debugInstantaneousThroughput;
+        	record = vector?;
+        );
+        @signal[debugFrameSize](type=long);
+        @statistic[debugFrameSizeStat]
+        (
+        	source = debugFrameSize;
+        	record = mean?, vector?;
         );
         @display("i=block/join");
         

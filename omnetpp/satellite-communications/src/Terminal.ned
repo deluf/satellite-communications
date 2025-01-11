@@ -13,7 +13,7 @@ simple Terminal
 		@signal[debugCodingRateDistribution](type = int);
 		@statistic[debugCodingRateDistributionStat](
 	   		source = debugCodingRateDistribution;
-	   		record = vector;
+	   		record = vector?;
 		);
 		@display("i=device/cellphone2");
 	   
