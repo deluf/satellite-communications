@@ -13,7 +13,20 @@ void PacketScheduler::initialize()
     satellite = satCom->getSubmodule("satellite");
     terminalCount = satCom->par("terminalCount").intValue();
     communicationSlotDuration = SimTime(satCom->par("communicationSlotDuration").doubleValue());
-    blocksPerFrame = par("blocksPerFrame").intValue();
+
+    /*
+     * The value of the blocksPerFrame parameter is usually set in the .ini file as a fraction
+     *  of the terminalCount parameter, therefore, it may happen that it ends up being a
+     *  non-integer number. To fix this, we round it to the lowest preceding integer and
+     *  warn the user about the implicit conversion.
+     */
+    double originalBlocksPerFrame = par("blocksPerFrame").doubleValue();
+    blocksPerFrame = int(originalBlocksPerFrame);
+
+    if (blocksPerFrame != originalBlocksPerFrame)
+    {
+        EV_WARN << "Converting blockPerFrame value from " << originalBlocksPerFrame << " to " << blocksPerFrame << endl;
+    }
 
     if (blocksPerFrame < 0)
     {
