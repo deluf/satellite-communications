@@ -8,7 +8,7 @@ simple Terminal
 		@signal[delay](type = double);
 		@statistic[delayStat](
 	   		source = delay;
-	   		record = histogram, vector?;
+	   		record = histogram, stats, vector?;
 		);
 		@signal[debugCodingRateDistribution](type = int);
 		@statistic[debugCodingRateDistributionStat](
