@@ -1,2 +1,3 @@
-# satellite-communications
-Simulator of a satellite-based communication system implemented using the OMNeT++ framework
+# Escape room
+
+Learn more at [deluf.github.io/2025/satellite-communications/](https://deluf.github.io/2025/satellite-communications/)
